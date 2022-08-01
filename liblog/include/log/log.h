@@ -16,6 +16,14 @@
 
 #pragma once
 
+#define USEING_PORTING_LOG_FEATURE
+
+#ifdef USEING_PORTING_LOG_FEATURE
+
+#include <log/porting_log.h>
+
+#else
+
 /* Too many in the ecosystem assume these are included */
 #if !defined(_WIN32)
 #include <pthread.h>
@@ -148,4 +156,6 @@ void __android_log_close(void);
 
 #ifdef __cplusplus
 }
+#endif
+
 #endif
