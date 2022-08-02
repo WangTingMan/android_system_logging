@@ -20,6 +20,10 @@
 
 #include <stdint.h>
 
+#ifndef LOG_TAG
+#define LOG_TAG "TAG"
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -46,7 +50,7 @@ extern "C" {
         ANDROID_LOG_SILENT, /* only for SetMinPriority(); must be last */
     };
 
-#define LOG_WARN ANDROID_LOG_WARN  
+#define LOG_WARN ANDROID_LOG_WARN
 #define LOG_VERBOSE ANDROID_LOG_VERBOSE
 
 typedef void (*porting_log_callback_type)(
@@ -113,7 +117,7 @@ LIBLOG_EXPORT int __log_error_stamp(
         }                                           \
     }
 
-#define LOG_ALWAYS_FATAL_IF(con, str, ...) LOG_ALWAYS_IF(con, ANDROID_LOG_FATAL, str, ##__VA_ARGS__ )
+#define LOG_ALWAYS_FATAL_IF(con, ...) LOG_ALWAYS_IF( (con), ANDROID_LOG_FATAL, #con, ##__VA_ARGS__ )
 #define ALOG_ASSERT(con, str, ...) LOG_ALWAYS_IF(!(con), ANDROID_LOG_FATAL, str, ##__VA_ARGS__ )
 #define LOG_ALWAYS_FATAL(str, ...) LOG_ALWAYS_FATAL_IF(true, str, ##__VA_ARGS__ )
 
