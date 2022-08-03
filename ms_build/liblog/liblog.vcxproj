@@ -19,10 +19,13 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\liblog\include\android\log.h" />
+    <ClInclude Include="..\..\liblog\include\android\android_porting_log.h" />
     <ClInclude Include="..\..\liblog\include\log\log.h" />
     <ClInclude Include="..\..\liblog\include\log\porting_log.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\liblog\android_porting_log.cc" />
     <ClCompile Include="..\..\liblog\porting_log.cc" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

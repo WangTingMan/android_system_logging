@@ -54,6 +54,15 @@
  *    conditions.
  */
 
+#define USEING_PORTING_LOG_FEATURE
+
+#ifdef USEING_PORTING_LOG_FEATURE
+
+#include <android/android_porting_log.h>
+
+#else
+
+
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -373,6 +382,8 @@ void __android_log_set_default_tag(const char* tag) __INTRODUCED_IN(30);
 
 #ifdef __cplusplus
 }
+#endif
+
 #endif
 
 /** @} */

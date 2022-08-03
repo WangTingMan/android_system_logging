@@ -21,9 +21,18 @@
     <ClInclude Include="..\..\liblog\include\log\porting_log.h">
       <Filter>header files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\liblog\include\android\log.h">
+      <Filter>header files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\liblog\include\android\android_porting_log.h">
+      <Filter>header files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\liblog\porting_log.cc">
+      <Filter>source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\liblog\android_porting_log.cc">
       <Filter>source files</Filter>
     </ClCompile>
   </ItemGroup>
