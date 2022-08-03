@@ -84,7 +84,7 @@ typedef void ( *__android_aborter_function )( const char* abort_message );
  *
  * Available since API level 30.
  */
-void __android_log_logd_logger( const struct __android_log_message* log_message );
+LIBLOG_EXPORT void __android_log_logd_logger( const struct __android_log_message* log_message );
 
 /**
  * Writes a formatted string to log buffer `id`,
@@ -94,7 +94,7 @@ void __android_log_logd_logger( const struct __android_log_message* log_message 
  *
  * Apps should use __android_log_print() instead.
  */
-int __android_log_buf_print( int bufID, int prio, const char* tag, const char* fmt, ... );
+LIBLOG_EXPORT int __android_log_buf_print( int bufID, int prio, const char* tag, const char* fmt, ... );
 
 /**
  * Sets a user defined logger function.  All log messages sent to liblog will be set to the
@@ -106,7 +106,7 @@ int __android_log_buf_print( int bufID, int prio, const char* tag, const char* f
  *
  * Available since API level 30.
  */
-void __android_log_set_logger( __android_logger_function logger );
+LIBLOG_EXPORT void __android_log_set_logger( __android_logger_function logger );
 
 /**
  * Sets a user defined aborter function that is called for __android_log_assert() failures.  This
@@ -117,7 +117,7 @@ void __android_log_set_logger( __android_logger_function logger );
  *
  * Available since API level 30.
  */
-void __android_log_set_aborter( __android_aborter_function aborter );
+LIBLOG_EXPORT void __android_log_set_aborter( __android_aborter_function aborter );
 
 /**
  * Calls the stored aborter function.  This allows for other logging libraries to use the same
@@ -128,7 +128,7 @@ void __android_log_set_aborter( __android_aborter_function aborter );
  *
  * Available since API level 30.
  */
-void __android_log_call_aborter( const char* abort_message );
+LIBLOG_EXPORT void __android_log_call_aborter( const char* abort_message );
 
 #ifdef __cplusplus
 }
