@@ -120,7 +120,7 @@ LIBLOG_EXPORT int __log_error_stamp(
 #define LOG_ALWAYS_FATAL_IF(con, ...) LOG_ALWAYS_IF( (con), ANDROID_LOG_FATAL, #con, ##__VA_ARGS__ )
 #define ALOG_ASSERT(con, str, ...) LOG_ALWAYS_IF(!(con), ANDROID_LOG_FATAL, str, ##__VA_ARGS__ )
 #define LOG_ALWAYS_FATAL(str, ...) LOG_ALWAYS_FATAL_IF(true, str, ##__VA_ARGS__ )
-
+#define LOG_FATAL_IF(con,...) LOG_ALWAYS_FATAL_IF( con,##__VA_ARGS__ )
 #define ALOGW_IF(con, str, ...) LOG_ALWAYS_IF(con, ANDROID_LOG_WARN, str, ##__VA_ARGS__ )
 
 
