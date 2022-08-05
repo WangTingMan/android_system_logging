@@ -85,6 +85,10 @@ LIBLOG_EXPORT int __log_error_stamp(
 #define ALOGV(str, ...) __log_format(ANDROID_LOG_VERBOSE, LOG_TAG, __FILE__, __FUNCTION__, __LINE__, str, ##__VA_ARGS__)
 #endif
 
+#ifndef ALOGI
+#define ALOGI(str, ...) __log_format(ANDROID_LOG_INFO, LOG_TAG, __FILE__, __FUNCTION__, __LINE__, str, ##__VA_ARGS__)
+#endif
+
 #ifndef ALOGW
 #define ALOGW(str, ...) __log_format(ANDROID_LOG_WARN, LOG_TAG, __FILE__, __FUNCTION__, __LINE__, str, ##__VA_ARGS__)
 #endif
