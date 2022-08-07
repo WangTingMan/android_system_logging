@@ -58,3 +58,14 @@ int __log_error_stamp(
     return 0;
 }
 
+int __android_log_error_write( int tag, const char* subTag, int32_t uid,
+    const char* data, uint32_t dataLen )
+{
+    if( s_cb )
+    {
+        s_cb( ANDROID_LOG_ERROR, subTag, nullptr, nullptr, 0, data );
+    }
+    return 0;
+}
+
+
