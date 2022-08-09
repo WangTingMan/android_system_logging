@@ -52,6 +52,7 @@ extern "C" {
 
 #define LOG_WARN ANDROID_LOG_WARN
 #define LOG_VERBOSE ANDROID_LOG_VERBOSE
+#define LOG_ERR ANDROID_LOG_ERROR
 
 typedef void (*porting_log_callback_type)(
         android_LogPriority a_severity,
@@ -84,6 +85,13 @@ LIBLOG_EXPORT int __log_error_stamp(
 LIBLOG_EXPORT int __android_log_error_write( int tag, const char* subTag, int32_t uid,
     const char* data, uint32_t dataLen );
 
+LIBLOG_EXPORT int __assert_message( const char* file, int line, const char* failed_expression );
+
+LIBLOG_EXPORT int ___syslog_message( int level, const char* file, int line, const char* a_pStr, ... );
+
+#define __assert __assert_message  
+#define syslog( level, str, ...) ___syslog_message(level, __FILE__, __LINE__, str, ##__VA_ARGS__)
+
 #ifndef android_errorWriteWithInfoLog
 #define android_errorWriteWithInfoLog(tag, subTag, uid, data, dataLen) \
   __android_log_error_write(tag, subTag, uid, data, dataLen)
@@ -109,6 +117,10 @@ LIBLOG_EXPORT int __android_log_error_write( int tag, const char* subTag, int32_
 #define ALOGD(str, ...) __log_format(ANDROID_LOG_DEBUG, LOG_TAG, __FILE__, __FUNCTION__, __LINE__, str, ##__VA_ARGS__)
 #endif
 
+#ifndef ALOGF
+#define ALOGF(str, ...) __log_format(ANDROID_LOG_FATAL, LOG_TAG, __FILE__, __FUNCTION__, __LINE__, str, ##__VA_ARGS__)
+#endif
+
 #define ALOG(level, tag, str, ...) __log_format(level, tag, __FILE__, __FUNCTION__, __LINE__, str, ##__VA_ARGS__)
 
 #ifndef __android_log_print
@@ -121,7 +133,7 @@ LIBLOG_EXPORT int __android_log_error_write( int tag, const char* subTag, int32_
 #define android_errorWriteLog( number, info_str ) __log_error_stamp(__FILE__, __FUNCTION__, __LINE__, number, info_str)
 #endif
 
-#ifndef __predict_false(exp)
+#ifndef __predict_false
 #define __predict_false(exp) (exp)
 #endif
 
@@ -153,6 +165,14 @@ LIBLOG_EXPORT int __android_log_error_write( int tag, const char* subTag, int32_
   ((__predict_false(cond))                                                              \
        ? (__FAKE_USE_VA_ARGS(##__VA_ARGS__), (void)ALOG(ANDROID_LOG_DEBUG, LOG_TAG, ##__VA_ARGS__)) \
        : ((void)0))
+#endif
+
+#ifndef IF_ALOGV
+#if LOG_NDEBUG
+#define IF_ALOGV() if (false)
+#else
+#define IF_ALOGV() if (true)
+#endif
 #endif
 
 #ifdef __cplusplus

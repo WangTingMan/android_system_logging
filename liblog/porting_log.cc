@@ -68,4 +68,29 @@ int __android_log_error_write( int tag, const char* subTag, int32_t uid,
     return 0;
 }
 
+int __assert_message( const char* file, int line, const char* failed_expression )
+{
+    if( s_cb )
+    {
+        s_cb( ANDROID_LOG_ERROR, "", file, nullptr, line, failed_expression );
+    }
+    return 0;
+}
+
+int ___syslog_message( int level, const char* file, int line, const char* a_pStr, ... )
+{
+    char pBuffer[LOGLINE_SIZE];
+    va_list vaList;
+    va_start( vaList, a_pStr );
+    ( void )vsnprintf( pBuffer, LOGLINE_SIZE - 1, a_pStr, vaList );
+    va_end( vaList );
+
+    android_LogPriority pri = static_cast< android_LogPriority>( level );
+
+    if( s_cb )
+    {
+        s_cb( pri, "", file, nullptr, line, pBuffer );
+    }
+    return 0;
+}
 
