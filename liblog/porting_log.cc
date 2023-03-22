@@ -94,3 +94,8 @@ int ___syslog_message( int level, const char* file, int line, const char* a_pStr
     return 0;
 }
 
+bool ___android_testLog( int level, const char* tag )
+{
+    return true;
+}
+

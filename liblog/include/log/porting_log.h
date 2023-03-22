@@ -89,6 +89,8 @@ LIBLOG_EXPORT int __assert_message( const char* file, int line, const char* fail
 
 LIBLOG_EXPORT int ___syslog_message( int level, const char* file, int line, const char* a_pStr, ... );
 
+LIBLOG_EXPORT bool ___android_testLog( int level, const char* tag);
+
 #define __assert __assert_message  
 #define syslog( level, str, ...) ___syslog_message(level, __FILE__, __LINE__, str, ##__VA_ARGS__)
 
@@ -165,6 +167,17 @@ LIBLOG_EXPORT int ___syslog_message( int level, const char* file, int line, cons
   ((__predict_false(cond))                                                              \
        ? (__FAKE_USE_VA_ARGS(##__VA_ARGS__), (void)ALOG(ANDROID_LOG_DEBUG, LOG_TAG, ##__VA_ARGS__)) \
        : ((void)0))
+#endif
+
+#ifndef android_testLog
+#define android_testLog ___android_testLog
+#endif
+
+/*
+ * Conditional given a desired logging priority and tag.
+ */
+#ifndef IF_ALOG
+#define IF_ALOG(priority, tag) if (android_testLog(ANDROID_##priority, tag))
 #endif
 
 #ifndef IF_ALOGV
