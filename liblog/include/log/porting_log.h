@@ -21,7 +21,7 @@
 #include <stdint.h>
 
 #ifndef LOG_TAG
-#define LOG_TAG "TAG"
+#define LOG_TAG ""
 #endif
 
 #ifdef __cplusplus
@@ -50,8 +50,10 @@ extern "C" {
         ANDROID_LOG_SILENT, /* only for SetMinPriority(); must be last */
     };
 
-#define LOG_WARN ANDROID_LOG_WARN
+#ifndef LOG_VERBOSE
 #define LOG_VERBOSE ANDROID_LOG_VERBOSE
+#endif
+
 #define LOG_ERR ANDROID_LOG_ERROR
 
 typedef void (*porting_log_callback_type)(
@@ -63,6 +65,7 @@ typedef void (*porting_log_callback_type)(
         const char* a_pStr
         );
 
+#define LIBLOG_LOG_CALLBACK_DEFINED
 LIBLOG_EXPORT void __set_porting_log_callback( porting_log_callback_type a_cb );
 
 LIBLOG_EXPORT int __log_format(
@@ -89,9 +92,18 @@ LIBLOG_EXPORT int __assert_message( const char* file, int line, const char* fail
 
 LIBLOG_EXPORT int ___syslog_message( int level, const char* file, int line, const char* a_pStr, ... );
 
-LIBLOG_EXPORT bool ___android_testLog( int level, const char* tag);
+/*
+ * Use the per-tag properties "log.tag.<tagname>" to generate a runtime
+ * result of non-zero to expose a log. prio is ANDROID_LOG_VERBOSE to
+ * ANDROID_LOG_FATAL. default_prio if no property. Undefined behavior if
+ * any other value.
+ */
+LIBLOG_EXPORT int __android_log_is_loggable(int prio, const char* tag, int default_prio);
+LIBLOG_EXPORT int __android_log_is_loggable_len(int prio, const char* tag, size_t len, int default_prio);
 
-#define __assert __assert_message  
+#ifndef __assert
+#define __assert __assert_message
+#endif
 #define syslog( level, str, ...) ___syslog_message(level, __FILE__, __LINE__, str, ##__VA_ARGS__)
 
 #ifndef android_errorWriteWithInfoLog
@@ -125,6 +137,10 @@ LIBLOG_EXPORT bool ___android_testLog( int level, const char* tag);
 
 #define ALOG(level, tag, str, ...) __log_format(level, tag, __FILE__, __FUNCTION__, __LINE__, str, ##__VA_ARGS__)
 
+#ifndef LOGWRAPPER
+#define LOGWRAPPER(fmt, ...) ALOGD(fmt, ##__VA_ARGS__)
+#endif
+
 #ifndef __android_log_print
 #define __android_log_print( level, tag, str, ... ) __log_format(level, tag, __FILE__, __FUNCTION__, __LINE__, str, ##__VA_ARGS__) 
 #endif
@@ -149,10 +165,22 @@ LIBLOG_EXPORT bool ___android_testLog( int level, const char* tag);
         }                                           \
     }
 
+#ifndef LOG_ALWAYS_FATAL_IF
 #define LOG_ALWAYS_FATAL_IF(con, ...) LOG_ALWAYS_IF( (con), ANDROID_LOG_FATAL, #con, ##__VA_ARGS__ )
+#endif
+
+#ifndef ALOG_ASSERT
 #define ALOG_ASSERT(con, str, ...) LOG_ALWAYS_IF(!(con), ANDROID_LOG_FATAL, str, ##__VA_ARGS__ )
-#define LOG_ALWAYS_FATAL(str, ...) LOG_ALWAYS_FATAL_IF(true, str, ##__VA_ARGS__ )
+#endif
+
+#ifndef LOG_ALWAYS_FATAL
+#define LOG_ALWAYS_FATAL(str, ...) LOG_ALWAYS_IF(true, ANDROID_LOG_FATAL, str, ##__VA_ARGS__ )
+#endif
+
+#ifndef LOG_FATAL_IF
 #define LOG_FATAL_IF(con,...) LOG_ALWAYS_FATAL_IF( con,##__VA_ARGS__ )
+#endif
+
 #define ALOGW_IF(con, str, ...) LOG_ALWAYS_IF(con, ANDROID_LOG_WARN, str, ##__VA_ARGS__ )
 
 #ifndef ALOGE_IF
@@ -169,9 +197,15 @@ LIBLOG_EXPORT bool ___android_testLog( int level, const char* tag);
        : ((void)0))
 #endif
 
-#ifndef android_testLog
-#define android_testLog ___android_testLog
+#ifndef IF_ALOGV
+#if LOG_NDEBUG
+#define IF_ALOGV() if (false)
+#else
+#define IF_ALOGV() if (true)
 #endif
+#endif
+
+#define android_testLog(prio, tag) true
 
 /*
  * Conditional given a desired logging priority and tag.
@@ -180,12 +214,8 @@ LIBLOG_EXPORT bool ___android_testLog( int level, const char* tag);
 #define IF_ALOG(priority, tag) if (android_testLog(ANDROID_##priority, tag))
 #endif
 
-#ifndef IF_ALOGV
-#if LOG_NDEBUG
-#define IF_ALOGV() if (false)
-#else
-#define IF_ALOGV() if (true)
-#endif
+#ifndef dprintf
+#define dprintf(...)
 #endif
 
 #ifdef __cplusplus

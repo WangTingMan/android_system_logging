@@ -16,15 +16,8 @@
 
 #pragma once
 
-#define USEING_PORTING_LOG_FEATURE
-
-#ifdef USEING_PORTING_LOG_FEATURE
-
-#include <log/porting_log.h>
-
-#else
-
 #include <stdbool.h>
+#include <sys/cdefs.h>
 #include <sys/types.h>
 
 #include <android/log.h>
@@ -342,6 +335,10 @@ extern int __fake_use_va_args(int, ...);
 #ifndef ALOG
 #define ALOG(priority, tag, ...) LOG_PRI(ANDROID_##priority, tag, __VA_ARGS__)
 #endif
+#ifdef  OPLUS_EXTENSION_API
+//MoSiTing@ANDROID.PERFORMANCE, 2020/02/28, Add for a performance tag for logcat and logd
+#define ALOGP(tag, ...) __android_log_buf_print(LOG_ID_SYSTEM, ANDROID_LOG_INFO, tag,  __VA_ARGS__)
+#endif /* OPLUS_EXTENSION_API */
 
 /*
  * Conditional given a desired logging priority and tag.
@@ -383,5 +380,3 @@ int __android_log_is_loggable_len(int prio, const char* tag, size_t len, int def
 #endif
 
 __END_DECLS
-
-#endif

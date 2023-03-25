@@ -60,3 +60,11 @@ void __android_log_call_aborter( const char* abort_message )
     }
 }
 
+int __android_log_write(int prio, const char* tag, const char* text)
+{
+    android_LogPriority level = static_cast<android_LogPriority>(prio);
+    __log_format(level, tag,
+        nullptr, __FUNCTION__, 0,
+        "%s", text);
+    return 0;
+}

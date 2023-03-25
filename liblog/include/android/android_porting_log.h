@@ -130,6 +130,12 @@ LIBLOG_EXPORT void __android_log_set_aborter( __android_aborter_function aborter
  */
 LIBLOG_EXPORT void __android_log_call_aborter( const char* abort_message );
 
+/**
+ * Writes the constant string `text` to the log, with priority `prio` and tag
+ * `tag`.
+ */
+LIBLOG_EXPORT int __android_log_write(int prio, const char* tag, const char* text);
+
 #ifdef __cplusplus
 }
 #endif
