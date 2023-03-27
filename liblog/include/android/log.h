@@ -54,7 +54,9 @@
  *    conditions.
  */
 
+#ifndef USEING_PORTING_LOG_FEATURE
 #define USEING_PORTING_LOG_FEATURE
+#endif
 
 #ifdef USEING_PORTING_LOG_FEATURE
 

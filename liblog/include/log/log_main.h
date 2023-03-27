@@ -16,6 +16,16 @@
 
 #pragma once
 
+#ifndef USEING_PORTING_LOG_FEATURE
+#define USEING_PORTING_LOG_FEATURE
+#endif
+
+#ifdef USEING_PORTING_LOG_FEATURE
+
+#include <log/porting_log.h>
+
+#else
+
 #include <stdbool.h>
 #include <sys/cdefs.h>
 #include <sys/types.h>
@@ -380,3 +390,5 @@ int __android_log_is_loggable_len(int prio, const char* tag, size_t len, int def
 #endif
 
 __END_DECLS
+
+#endif
