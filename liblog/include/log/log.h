@@ -22,6 +22,7 @@
 
 #ifdef USEING_PORTING_LOG_FEATURE
 
+#include <android/android_porting_log.h>
 #include <log/porting_log.h>
 
 #else

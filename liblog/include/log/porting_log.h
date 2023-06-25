@@ -20,6 +20,22 @@
 
 #include <stdint.h>
 
+/*
+ * Event log entry types.
+ */
+typedef enum {
+    /* Special markers for android_log_list_element type */
+    EVENT_TYPE_LIST_STOP = '\n', /* declare end of list  */
+    EVENT_TYPE_UNKNOWN = '?',    /* protocol error       */
+
+    /* must match with declaration in java/android/android/util/EventLog.java */
+    EVENT_TYPE_INT = 0,  /* int32_t */
+    EVENT_TYPE_LONG = 1, /* int64_t */
+    EVENT_TYPE_STRING = 2,
+    EVENT_TYPE_LIST = 3,
+    EVENT_TYPE_FLOAT = 4,
+} AndroidEventLogType;
+
 #ifndef LOG_TAG
 #define LOG_TAG ""
 #endif
