@@ -13,6 +13,15 @@
 #include <mutex>
 #include <string_view>
 #include <vector>
+#include <fstream>
+
+#include <base/debug/stack_trace.h>
+#include <base/files/file_util.h>
+#include <base/strings/string_util.h>
+#include <base/threading/platform_thread.h>
+#include <base/threading/thread.h>
+#include <base/time/time.h>
+#include <base/logging.h>
 
 #define LOGLINE_SIZE 1024
 #define BOOLEAN_TRUE 0xFF
@@ -20,8 +29,12 @@
 
 #define strcasecmp _stricmp
 
+std::mutex s_log_file_mutex;
+std::fstream s_log_file_stream;
+std::string s_file_name;
+
 template<typename T, int N>
-int arraysize(T(&arr)[N])
+int array_size(T(&arr)[N])
 {
     return N;
 }
@@ -61,8 +74,85 @@ void ___default_logger(
 {
     const char* file = ___extract_file_name_from_path(a_fileName);
     std::stringstream ss;
-    ss << '[' << file << ':' << a_lineNr << "]:" << a_pStr << '\n';
-    std::cout << ss.str();
+
+    base::Time::Exploded exploded_time;
+    base::Time current_time = base::Time::NowFromSystemTime();
+    current_time.LocalExplode( &exploded_time );
+
+    char buffer[256] = { 0 };
+    snprintf( buffer, 256,
+              "[%02d-%02d %02d:%02d:%02d.%03d] ", exploded_time.month,
+              exploded_time.day_of_month, exploded_time.hour, exploded_time.minute,
+              exploded_time.second, exploded_time.millisecond );
+    ss << buffer << "[" << base::PlatformThread::CurrentId() << "] ";
+
+    switch( a_severity )
+    {
+    case ANDROID_LOG_UNKNOWN:
+        ss << "[V] ";
+        break;
+    case ANDROID_LOG_DEFAULT:
+        ss << "[V] ";
+        break;
+    case ANDROID_LOG_VERBOSE:
+        ss << "[V] ";
+        break;
+    case ANDROID_LOG_DEBUG:
+        ss << "[D] ";
+        break;
+    case ANDROID_LOG_INFO:
+        ss << "[I] ";
+        break;
+    case ANDROID_LOG_WARN:
+        ss << "[W] ";
+        break;
+    case ANDROID_LOG_ERROR:
+        ss << "[E] ";
+        break;
+    case ANDROID_LOG_FATAL:
+        ss << "[F] ";
+        break;
+    case ANDROID_LOG_SILENT:
+        ss << "[V] ";
+        break;
+    default:
+        break;
+    }
+
+    ss << "[" << file << ':' << a_lineNr << "] ";
+    if (a_pStr)
+    {
+        ss << a_pStr;
+    }
+
+    std::string log_str = ss.str();
+    if (log_str.back() != '\n')
+    {
+        log_str.push_back('\n');
+    }
+
+    std::lock_guard<std::mutex> lcker( s_log_file_mutex );
+    if( !s_log_file_stream.is_open() )
+    {
+        if( !s_file_name.empty() )
+        {
+            s_log_file_stream.open( s_file_name, std::ios::out | std::ios::trunc );
+        }
+    }
+
+    if( s_log_file_stream.is_open() )
+    {
+        s_log_file_stream << log_str << std::flush;
+    }
+    else
+    {
+        std::cout << log_str;
+    }
+
+    if (a_severity == ANDROID_LOG_FATAL)
+    {
+        std::abort();
+    }
 }
 
 static std::atomic_int32_t minimum_log_priority = ANDROID_LOG_DEFAULT;
@@ -102,6 +192,19 @@ void __set_porting_log_callback( porting_log_callback_type a_cb )
     s_cb = a_cb;
 }
 
+void __set_default_log_file_name( const char* a_file_name )
+{
+    std::lock_guard<std::mutex> lcker( s_log_file_mutex );
+    if( a_file_name )
+    {
+        s_file_name = a_file_name;
+    }
+    else
+    {
+        s_file_name.clear();
+    }
+}
+
 int __log_error_stamp(
     const char* a_fileName,
     const char* a_funcName,
@@ -128,15 +231,15 @@ int __log_error_stamp(
 }
 
 int __android_log_error_write( int tag, const char* subTag, int32_t uid,
-    const char* data, uint32_t dataLen )
+    const char* data, uint32_t dataLen, const char* file, uint32_t line )
 {
     if( s_cb )
     {
-        s_cb( ANDROID_LOG_ERROR, subTag, nullptr, nullptr, 0, data );
+        s_cb( ANDROID_LOG_ERROR, subTag, file, nullptr, line, data );
     }
     else
     {
-      ___default_logger(ANDROID_LOG_ERROR, subTag, nullptr, nullptr, 0, data);
+      ___default_logger(ANDROID_LOG_ERROR, subTag, file, nullptr, line, data);
     }
     return 0;
 }
@@ -268,7 +371,7 @@ static int __android_log_level(const char* tag, size_t tag_len) {
       // compare() rather than == because tag isn't guaranteed 0-terminated.
       if (last_tag->compare(0, last_tag->size(), tag, tag_len) != 0) {
         // Invalidate log.tag.<tag> cache.
-        for (size_t i = 0; i < arraysize(tag_cache); ++i) {
+        for (size_t i = 0; i < array_size(tag_cache); ++i) {
           tag_cache[i].cache.pinfo = NULL;
           tag_cache[i].c = '\0';
         }
@@ -277,7 +380,7 @@ static int __android_log_level(const char* tag, size_t tag_len) {
       }
     }
 
-    for (size_t i = 0; i < arraysize(tag_cache); ++i) {
+    for (size_t i = 0; i < array_size(tag_cache); ++i) {
       cache_char* cache = &tag_cache[i];
       cache_char temp_cache;
 
@@ -312,7 +415,7 @@ static int __android_log_level(const char* tag, size_t tag_len) {
       /* clear '.' after log.tag */
       key[strlen(log_namespace) - 1] = '\0';
 
-      for (size_t i = 0; i < arraysize(global_cache); ++i) {
+      for (size_t i = 0; i < array_size(global_cache); ++i) {
         cache_char* cache = &global_cache[i];
         cache_char temp_cache;
 

@@ -84,6 +84,8 @@ typedef void (*porting_log_callback_type)(
 #define LIBLOG_LOG_CALLBACK_DEFINED
 LIBLOG_EXPORT void __set_porting_log_callback( porting_log_callback_type a_cb );
 
+LIBLOG_EXPORT void __set_default_log_file_name( const char* a_file_name );
+
 LIBLOG_EXPORT int __log_format(
         android_LogPriority a_severity,
         const char* a_tag,
@@ -102,7 +104,7 @@ LIBLOG_EXPORT int __log_error_stamp(
     );
 
 LIBLOG_EXPORT int __android_log_error_write( int tag, const char* subTag, int32_t uid,
-    const char* data, uint32_t dataLen );
+    const char* data, uint32_t dataLen, const char* file, uint32_t line );
 
 LIBLOG_EXPORT int __assert_message( const char* file, int line, const char* failed_expression );
 
@@ -124,7 +126,7 @@ LIBLOG_EXPORT int __android_log_is_loggable_len(int prio, const char* tag, size_
 
 #ifndef android_errorWriteWithInfoLog
 #define android_errorWriteWithInfoLog(tag, subTag, uid, data, dataLen) \
-  __android_log_error_write(tag, subTag, uid, data, dataLen)
+  __android_log_error_write(tag, subTag, uid, data, dataLen, __FILE__, __LINE__)
 #endif
 
 #ifndef ALOGV
@@ -133,6 +135,10 @@ LIBLOG_EXPORT int __android_log_is_loggable_len(int prio, const char* tag, size_
 
 #ifndef ALOGI
 #define ALOGI(str, ...) __log_format(ANDROID_LOG_INFO, LOG_TAG, __FILE__, __FUNCTION__, __LINE__, str, ##__VA_ARGS__)
+#endif
+
+#ifndef ALOGI_LOCATION
+#define ALOGI_LOCATION(str, file, line, ...) __log_format(ANDROID_LOG_INFO, LOG_TAG, file, __FUNCTION__, line, str, ##__VA_ARGS__)
 #endif
 
 #ifndef ALOGW

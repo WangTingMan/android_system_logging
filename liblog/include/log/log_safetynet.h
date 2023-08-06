@@ -23,13 +23,13 @@ extern "C" {
 #endif
 
 #define android_errorWriteLog(tag, subTag) \
-  __android_log_error_write(tag, subTag, -1, NULL, 0)
+  __android_log_error_write(tag, subTag, -1, NULL, 0, __FILE__, __LINE__)
 
 #define android_errorWriteWithInfoLog(tag, subTag, uid, data, dataLen) \
-  __android_log_error_write(tag, subTag, uid, data, dataLen)
+  __android_log_error_write(tag, subTag, uid, data, dataLen, __FILE__, __LINE__)
 
 int __android_log_error_write(int tag, const char* subTag, int32_t uid,
-                              const char* data, uint32_t dataLen);
+                              const char* data, uint32_t dataLen, const char* file, uint32_t line);
 
 #ifdef __cplusplus
 }
