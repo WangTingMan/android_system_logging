@@ -219,6 +219,13 @@ LIBLOG_EXPORT int __android_log_is_loggable_len(int prio, const char* tag, size_
        : ((void)0))
 #endif
 
+#ifndef ALOGI_IF
+#define ALOGI_IF(cond, ...)                                                             \
+  ((__predict_false(cond))                                                              \
+       ? (__FAKE_USE_VA_ARGS(##__VA_ARGS__), (void)ALOG(ANDROID_LOG_INFO, LOG_TAG, ##__VA_ARGS__)) \
+       : ((void)0))
+#endif
+
 #ifndef IF_ALOGV
 #if LOG_NDEBUG
 #define IF_ALOGV() if (false)
