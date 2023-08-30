@@ -192,7 +192,7 @@ void __set_porting_log_callback( porting_log_callback_type a_cb )
     s_cb = a_cb;
 }
 
-void __set_default_log_file_name( const char* a_file_name )
+void __set_default_log_file_name( const char* a_file_name, int a_auto_change_name )
 {
     std::lock_guard<std::mutex> lcker( s_log_file_mutex );
     if( a_file_name )
@@ -201,7 +201,24 @@ void __set_default_log_file_name( const char* a_file_name )
     }
     else
     {
-        s_file_name.clear();
+        wchar_t module_name[MAX_PATH];
+        GetModuleFileName( nullptr, module_name, MAX_PATH );
+        std::wstring log_name = module_name;
+        std::wstring::size_type last_backslash = log_name.rfind( '.', log_name.size() );
+        if( last_backslash != std::wstring::npos )
+            log_name.erase( last_backslash + 1 );
+        ::base::FilePath path( log_name );
+        std::string file_name = path.StdStringValue();
+        if( a_auto_change_name )
+        {
+            int pid = _getpid();
+            file_name.append( std::to_string( pid ) ).append( ".log" );
+        }
+        else
+        {
+            file_name.append( "log" );
+        }
+        s_file_name = file_name;
     }
 }
 

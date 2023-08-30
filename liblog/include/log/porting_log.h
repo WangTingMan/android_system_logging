@@ -84,7 +84,11 @@ typedef void (*porting_log_callback_type)(
 #define LIBLOG_LOG_CALLBACK_DEFINED
 LIBLOG_EXPORT void __set_porting_log_callback( porting_log_callback_type a_cb );
 
-LIBLOG_EXPORT void __set_default_log_file_name( const char* a_file_name );
+/**
+ * a_file_name: the log file name, auto generate a file name if it is null.
+ * a_auto_change_name: if a_file_name is null, this parameter take effect.
+ */
+LIBLOG_EXPORT void __set_default_log_file_name( const char* a_file_name, int a_auto_change_name );
 
 LIBLOG_EXPORT int __log_format(
         android_LogPriority a_severity,
