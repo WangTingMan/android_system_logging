@@ -84,7 +84,7 @@ void ___default_logger(
               "[%02d-%02d %02d:%02d:%02d.%03d] ", exploded_time.month,
               exploded_time.day_of_month, exploded_time.hour, exploded_time.minute,
               exploded_time.second, exploded_time.millisecond );
-    ss << buffer << "[" << base::PlatformThread::CurrentId() << "] ";
+    ss << buffer;
 
     switch( a_severity )
     {
@@ -118,6 +118,8 @@ void ___default_logger(
     default:
         break;
     }
+
+    ss << "[" << base::PlatformThread::CurrentId() << "] ";
 
     ss << "[" << file << ':' << a_lineNr << "] ";
     if (a_pStr)
