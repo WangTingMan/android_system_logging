@@ -33,12 +33,20 @@
 
 #define LOGGER_MAGIC 'l'
 
+#ifndef ssize_t
+#define ssize_t int64_t
+#endif
+
 #if defined(__cplusplus)
 extern "C" {
 #endif
 
+#ifdef _MSC_VER
+#pragma pack(1)
+#endif
+
 /* Header Structure to pstore */
-typedef struct __attribute__((__packed__)) {
+typedef struct /*__attribute__((__packed__))*/ {
   uint8_t magic;
   uint16_t len;
   uint16_t uid;
@@ -46,49 +54,49 @@ typedef struct __attribute__((__packed__)) {
 } android_pmsg_log_header_t;
 
 /* Header Structure to logd, and second header for pstore */
-typedef struct __attribute__((__packed__)) {
+typedef struct /*__attribute__((__packed__))*/ {
   uint8_t id;
   uint16_t tid;
   log_time realtime;
 } android_log_header_t;
 
 /* Event Header Structure to logd */
-typedef struct __attribute__((__packed__)) {
+typedef struct /*__attribute__((__packed__))*/ {
   int32_t tag;  // Little Endian Order
 } android_event_header_t;
 
 // Event payload EVENT_TYPE_LIST
-typedef struct __attribute__((__packed__)) {
+typedef struct /*__attribute__((__packed__))*/ {
   int8_t type;  // EVENT_TYPE_LIST
   int8_t element_count;
 } android_event_list_t;
 
 // Event payload EVENT_TYPE_FLOAT
-typedef struct __attribute__((__packed__)) {
+typedef struct /*__attribute__((__packed__))*/ {
   int8_t type;  // EVENT_TYPE_FLOAT
   float data;
 } android_event_float_t;
 
 /* Event payload EVENT_TYPE_INT */
-typedef struct __attribute__((__packed__)) {
+typedef struct /*__attribute__((__packed__))*/ {
   int8_t type;   // EVENT_TYPE_INT
   int32_t data;  // Little Endian Order
 } android_event_int_t;
 
 /* Event with single EVENT_TYPE_INT */
-typedef struct __attribute__((__packed__)) {
+typedef struct /*__attribute__((__packed__))*/ {
   android_event_header_t header;
   android_event_int_t payload;
 } android_log_event_int_t;
 
 /* Event payload EVENT_TYPE_LONG */
-typedef struct __attribute__((__packed__)) {
+typedef struct /*__attribute__((__packed__))*/ {
   int8_t type;   // EVENT_TYPE_LONG
   int64_t data;  // Little Endian Order
 } android_event_long_t;
 
 /* Event with single EVENT_TYPE_LONG */
-typedef struct __attribute__((__packed__)) {
+typedef struct /*__attribute__((__packed__))*/ {
   android_event_header_t header;
   android_event_long_t payload;
 } android_log_event_long_t;
@@ -105,19 +113,23 @@ typedef struct __attribute__((__packed__)) {
  * http://stackoverflow.com/questions/4412749/are-flexible-array-members-valid-in-c
  */
 
-typedef struct __attribute__((__packed__)) {
+typedef struct /*__attribute__((__packed__))*/ {
   int8_t type;     // EVENT_TYPE_STRING;
   int32_t length;  // Little Endian Order
   char data[];
 } android_event_string_t;
 
 /* Event with single EVENT_TYPE_STRING */
-typedef struct __attribute__((__packed__)) {
+typedef struct /*__attribute__((__packed__))*/ {
   android_event_header_t header;
   int8_t type;     // EVENT_TYPE_STRING;
   int32_t length;  // Little Endian Order
   char data[];
 } android_log_event_string_t;
+
+#ifdef _MSC_VER
+#pragma pack()
+#endif
 
 #define ANDROID_LOG_PMSG_FILE_MAX_SEQUENCE 256 /* 1MB file */
 #define ANDROID_LOG_PMSG_FILE_SEQUENCE 1000

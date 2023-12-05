@@ -15,9 +15,10 @@
  */
 
 #pragma once
-
+#ifndef _MSC_VER
 #include <sys/cdefs.h>
 #include <unistd.h>
+#endif
 
 #include "log/log_read.h"
 

@@ -15,9 +15,10 @@
  */
 
 #pragma once
-
+#ifndef _MSC_VER
 #include <stdatomic.h>
 #include <sys/cdefs.h>
+#endif
 
 #include <log/log.h>
 
@@ -26,7 +27,7 @@
 __BEGIN_DECLS
 
 struct logger_list {
-  atomic_int fd;
+  /*atomic_int*/int fd;
   int mode;
   unsigned int tail;
   log_time start;

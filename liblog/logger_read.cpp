@@ -18,13 +18,17 @@
 
 #include <errno.h>
 #include <fcntl.h>
+#ifndef _MSC_VER
 #include <pthread.h>
 #include <sched.h>
+#endif
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#ifndef _MSC_VER
 #include <unistd.h>
+#endif
 
 #include <android/log.h>
 

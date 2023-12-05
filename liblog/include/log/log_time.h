@@ -32,6 +32,10 @@
 
 extern "C" {
 
+#ifdef _MSC_VER
+#pragma pack(1)
+#endif
+
 struct log_time {
  public:
   uint32_t tv_sec = 0; /* good to Feb 5 2106 */
@@ -149,7 +153,12 @@ struct log_time {
 
   /* Add %#q for the fraction of a second to the standard library functions */
   char* strptime(const char* s, const char* format);
-} __attribute__((__packed__));
+}/* __attribute__((__packed__))*/;
+
+#ifdef _MSC_VER
+#pragma pack()
+#endif
+
 }
 
 #else /* __cplusplus */

@@ -22,6 +22,16 @@
 #include <android/log.h>
 #include <log/log_time.h>
 
+#include <log/liblog_export.h>
+
+#ifndef ssize_t
+#define ssize_t int64_t
+#endif
+
+#ifndef pid_t
+#define pid_t int
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -55,10 +65,18 @@ struct logger_entry {
 #define LOGGER_ENTRY_MAX_LEN (5 * 1024)
 
 struct log_msg {
+
+#ifdef _MSC_VER
+#pragma pack(4)
+#endif
   union {
     unsigned char buf[LOGGER_ENTRY_MAX_LEN + 1];
     struct logger_entry entry;
-  } __attribute__((aligned(4)));
+  } /*__attribute__((aligned(4)))*/;
+#ifdef _MSC_VER
+#pragma pack()
+#endif
+
 #ifdef __cplusplus
   uint64_t nsec() const {
     return static_cast<uint64_t>(entry.sec) * NS_PER_SEC + entry.nsec;

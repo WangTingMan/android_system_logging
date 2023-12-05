@@ -16,17 +16,6 @@
 
 #pragma once
 
-#ifndef USEING_PORTING_LOG_FEATURE
-#define USEING_PORTING_LOG_FEATURE
-#endif
-
-#ifdef USEING_PORTING_LOG_FEATURE
-
-#include <android/android_porting_log.h>
-#include <log/porting_log.h>
-
-#else
-
 /* Too many in the ecosystem assume these are included */
 #if !defined(_WIN32)
 #include <pthread.h>
@@ -34,7 +23,9 @@
 #include <stdint.h> /* uint16_t, int32_t */
 #include <stdio.h>
 #include <time.h>
+#ifndef _MSC_VER
 #include <unistd.h>
+#endif
 
 #include <android/log.h>
 #include <log/log_id.h>
@@ -43,6 +34,8 @@
 #include <log/log_safetynet.h>
 #include <log/log_system.h>
 #include <log/log_time.h>
+
+#include <log/liblog_export.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -89,12 +82,12 @@ extern "C" {
  * The following should not be used directly.
  */
 
-int __android_log_bwrite(int32_t tag, const void* payload, size_t len);
-int __android_log_btwrite(int32_t tag, char type, const void* payload,
+LIBLOG_EXPORT int __android_log_bwrite(int32_t tag, const void* payload, size_t len);
+LIBLOG_EXPORT int __android_log_btwrite(int32_t tag, char type, const void* payload,
                           size_t len);
-int __android_log_bswrite(int32_t tag, const char* payload);
+LIBLOG_EXPORT int __android_log_bswrite(int32_t tag, const char* payload);
 
-int __android_log_stats_bwrite(int32_t tag, const void* payload, size_t len);
+LIBLOG_EXPORT int __android_log_stats_bwrite(int32_t tag, const void* payload, size_t len);
 
 #define android_bWriteLog(tag, payload, len) \
   __android_log_bwrite(tag, payload, len)
@@ -155,10 +148,8 @@ typedef enum {
  *
  * Note that this is not safe to call from a multi-threaded program.
  */
-void __android_log_close(void);
+LIBLOG_EXPORT void __android_log_close(void);
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

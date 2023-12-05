@@ -18,6 +18,8 @@
 
 #include <stddef.h>
 
+#include <log/liblog_export.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif

@@ -18,6 +18,8 @@
 
 #include <android/log.h>
 
+#include <log/liblog_export.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -25,8 +27,8 @@ extern "C" {
 /*
  * log_id_t helpers
  */
-log_id_t android_name_to_log_id(const char* logName);
-const char* android_log_id_to_name(log_id_t log_id);
+LIBLOG_EXPORT log_id_t android_name_to_log_id(const char* logName);
+LIBLOG_EXPORT const char* android_log_id_to_name(log_id_t log_id);
 
 #ifdef __cplusplus
 }

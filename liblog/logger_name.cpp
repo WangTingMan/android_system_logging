@@ -20,6 +20,33 @@
 #include <log/log.h>
 
 /* In the future, we would like to make this list extensible */
+#ifdef _MSC_VER
+const char* LOG_NAME(int id) {
+    switch( id )
+    {
+    case LOG_ID_MAIN:
+        return "main";
+    case LOG_ID_RADIO:
+        return "radio";
+    case LOG_ID_EVENTS:
+        return "events";
+    case LOG_ID_SYSTEM:
+        return "system";
+    case LOG_ID_CRASH:
+        return "crash";
+    case LOG_ID_STATS:
+        return "stats";
+    case LOG_ID_SECURITY:
+        return "security";
+    case LOG_ID_KERNEL:
+        return "kernel";
+    default:
+        break;
+    }
+    return "main";
+};
+
+#else
 static const char* LOG_NAME[LOG_ID_MAX] = {
     /* clang-format off */
   [LOG_ID_MAIN] = "main",
@@ -32,19 +59,23 @@ static const char* LOG_NAME[LOG_ID_MAX] = {
   [LOG_ID_KERNEL] = "kernel",
     /* clang-format on */
 };
+#endif
 
 const char* android_log_id_to_name(log_id_t log_id) {
   if (log_id >= LOG_ID_MAX) {
     log_id = LOG_ID_MAIN;
   }
-  return LOG_NAME[log_id];
+  return LOG_NAME(log_id);
 }
 
+#ifdef _MSC_VER
+#else
 static_assert(std::is_same<std::underlying_type<log_id_t>::type, uint32_t>::value,
               "log_id_t must be an uint32_t");
 
 static_assert(std::is_same<std::underlying_type<android_LogPriority>::type, uint32_t>::value,
               "log_id_t must be an uint32_t");
+#endif
 
 log_id_t android_name_to_log_id(const char* logName) {
   const char* b;
@@ -62,7 +93,7 @@ log_id_t android_name_to_log_id(const char* logName) {
   }
 
   for (ret = LOG_ID_MIN; ret < LOG_ID_MAX; ++ret) {
-    const char* l = LOG_NAME[ret];
+    const char* l = LOG_NAME(ret);
     if (l && !strcmp(b, l)) {
       return static_cast<log_id_t>(ret);
     }

@@ -18,10 +18,19 @@
 
 #include <errno.h>
 #include <inttypes.h>
+#ifndef _MSC_VER
 #include <libgen.h>
+#endif
 #include <stdlib.h>
 #include <string.h>
+#ifndef _MSC_VER
 #include <sys/time.h>
+#endif
+
+#ifdef _MSC_VER
+#include <filesystem>
+#define PATH_MAX 256
+#endif
 
 #ifdef __BIONIC__
 #include <android/set_abort_message.h>
@@ -50,6 +59,7 @@
 #include <syscall.h>
 #elif defined(_WIN32)
 #include <windows.h>
+#include <process.h>
 #endif
 
 using android::base::ErrnoRestorer;
@@ -118,11 +128,17 @@ static const char* getprogname() {
 
   if (first) {
     char path[PATH_MAX + 1];
-    DWORD result = GetModuleFileName(nullptr, path, sizeof(path) - 1);
+    DWORD result = GetModuleFileNameA(nullptr, path, sizeof(path) - 1);
     if (result == 0 || result == sizeof(path) - 1) return "";
     path[PATH_MAX - 1] = 0;
 
+#ifdef _MSC_VER
+    std::filesystem::path path_( path );
+    std::string name = path_.stem().string();
+    const char* path_basename = name.c_str();
+#else
     char* path_basename = basename(path);
+#endif
 
     snprintf(progname, sizeof(progname), "%s", path_basename);
     first = false;
@@ -159,7 +175,14 @@ int32_t __android_log_get_minimum_priority() {
 #ifdef __ANDROID__
 static __android_logger_function logger_function = __android_log_logd_logger;
 #else
+#ifdef _MSC_VER
+
+extern "C" void __android_log_logd_logger_default( const struct __android_log_message* log_message );
+
+static __android_logger_function logger_function = __android_log_logd_logger_default;
+#else
 static __android_logger_function logger_function = __android_log_stderr_logger;
+#endif
 #endif
 
 void __android_log_set_logger(__android_logger_function logger) {
@@ -336,7 +359,7 @@ int __android_log_vprint(int prio, const char* tag, const char* fmt, va_list ap)
     return -EPERM;
   }
 
-  __attribute__((uninitialized)) char buf[LOG_BUF_SIZE];
+  /*__attribute__((uninitialized))*/ char buf[LOG_BUF_SIZE];
 
   vsnprintf(buf, LOG_BUF_SIZE, fmt, ap);
 
@@ -354,7 +377,7 @@ int __android_log_print(int prio, const char* tag, const char* fmt, ...) {
   }
 
   va_list ap;
-  __attribute__((uninitialized)) char buf[LOG_BUF_SIZE];
+  /*__attribute__((uninitialized))*/ char buf[LOG_BUF_SIZE];
 
   va_start(ap, fmt);
   vsnprintf(buf, LOG_BUF_SIZE, fmt, ap);
@@ -366,6 +389,36 @@ int __android_log_print(int prio, const char* tag, const char* fmt, ...) {
   return 1;
 }
 
+int __android_log_print_ext(
+    android_LogPriority prio,
+    const char* tag,
+    const char* file,
+    unsigned int line,
+    const char* fmt,
+    ... )
+{
+    char buf[LOG_BUF_SIZE] = { 0x00 };
+    if( fmt )
+    {
+        va_list vaList;
+        va_start( vaList, fmt );
+        vsnprintf( buf, LOG_BUF_SIZE - 1, fmt, vaList );
+        va_end( vaList );
+    }
+
+    __android_log_message log_message;
+    log_message.struct_size = sizeof( __android_log_message );
+    log_message.buffer_id = LOG_ID_MAIN;
+    log_message.priority = prio;
+    log_message.tag = tag;
+    log_message.file = file;
+    log_message.line = line;
+    log_message.message = buf;
+
+    __android_log_write_log_message( &log_message );
+    return 0;
+}
+
 int __android_log_buf_print(int bufID, int prio, const char* tag, const char* fmt, ...) {
   ErrnoRestorer errno_restorer;
 
@@ -374,7 +427,7 @@ int __android_log_buf_print(int bufID, int prio, const char* tag, const char* fm
   }
 
   va_list ap;
-  __attribute__((uninitialized)) char buf[LOG_BUF_SIZE];
+  /*__attribute__((uninitialized))*/ char buf[LOG_BUF_SIZE];
 
   va_start(ap, fmt);
   vsnprintf(buf, LOG_BUF_SIZE, fmt, ap);
@@ -387,7 +440,7 @@ int __android_log_buf_print(int bufID, int prio, const char* tag, const char* fm
 }
 
 void __android_log_assert(const char* cond, const char* tag, const char* fmt, ...) {
-  __attribute__((uninitialized)) char buf[LOG_BUF_SIZE];
+  /*__attribute__((uninitialized))*/ char buf[LOG_BUF_SIZE];
 
   if (fmt) {
     va_list ap;
@@ -407,8 +460,10 @@ void __android_log_assert(const char* cond, const char* tag, const char* fmt, ..
 
   // Log assertion failures to stderr for the benefit of "adb shell" users
   // and gtests (http://b/23675822).
+#ifndef _MSC_VER
   TEMP_FAILURE_RETRY(write(2, buf, strlen(buf)));
   TEMP_FAILURE_RETRY(write(2, "\n", 1));
+#endif
 
   __android_log_write(ANDROID_LOG_FATAL, tag, buf);
   __android_log_call_aborter(buf);

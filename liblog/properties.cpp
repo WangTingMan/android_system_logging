@@ -17,10 +17,14 @@
 #include <log/log_properties.h>
 
 #include <ctype.h>
+#ifndef _MSC_VER
 #include <pthread.h>
+#endif
 #include <stdlib.h>
 #include <string.h>
+#ifndef _MSC_VER
 #include <unistd.h>
+#endif
 
 #include <algorithm>
 

@@ -16,21 +16,31 @@
 
 #pragma once
 
-#ifndef USEING_PORTING_LOG_FEATURE
-#define USEING_PORTING_LOG_FEATURE
-#endif
-
-#ifdef USEING_PORTING_LOG_FEATURE
-
-#include <log/porting_log.h>
-
-#else
-
 #include <stdbool.h>
+#ifndef _MSC_VER
 #include <sys/cdefs.h>
+#endif
 #include <sys/types.h>
 
+#include <log/liblog_export.h>
+
 #include <android/log.h>
+
+#ifdef __cplusplus
+#ifndef __BEGIN_DECLS
+#define __BEGIN_DECLS extern "C" {
+#endif
+#else
+#define __BEGIN_DECLS
+#endif
+
+#ifdef __cplusplus
+#ifndef __END_DECLS
+#define __END_DECLS }
+#endif
+#else
+#define __END_DECLS
+#endif
 
 __BEGIN_DECLS
 
@@ -86,7 +96,11 @@ extern int __fake_use_va_args(int, ...);
 #endif /* __clang_analyzer__ */
 
 #ifndef __predict_false
+#ifdef _MSC_VER
+#define __predict_false(exp) (exp)
+#else
 #define __predict_false(exp) __builtin_expect((exp) != 0, 0)
+#endif
 #endif
 
 #define android_writeLog(prio, tag, text) __android_log_write(prio, tag, text)
@@ -127,12 +141,17 @@ extern int __fake_use_va_args(int, ...);
 /* If passed multiple args, returns ',' followed by all but 1st arg, otherwise
  * returns nothing.
  */
-#define __android_rest(first, ...) , ##__VA_ARGS__
+#define __android_rest(first, ...) , __VA_ARGS__
 
+#ifdef _MSC_VER
+#define android_printAssert(cond, tag, ...)                     \
+  __android_log_assert(cond, tag ,#cond)
+#else
 #define android_printAssert(cond, tag, ...)                     \
   __android_log_assert(cond, tag,                               \
                        __android_second(0, ##__VA_ARGS__, NULL) \
                            __android_rest(__VA_ARGS__))
+#endif
 
 /*
  * Log a fatal error.  If the given condition fails, this stops program
@@ -176,6 +195,8 @@ extern int __fake_use_va_args(int, ...);
 #endif
 
 #endif
+
+#define ALOGF LOG_FATAL
 
 /*
  * Assertion that generates a log message when the assertion fails.
@@ -342,13 +363,12 @@ extern int __fake_use_va_args(int, ...);
  *
  * The second argument may be NULL or "" to indicate the "global" tag.
  */
+#define ALOG(priority, tag, ...) __android_log_print_ext(ANDROID_##priority, tag, \
+    __FILE__, __LINE__, ##__VA_ARGS__)
+
 #ifndef ALOG
 #define ALOG(priority, tag, ...) LOG_PRI(ANDROID_##priority, tag, __VA_ARGS__)
 #endif
-#ifdef  OPLUS_EXTENSION_API
-//MoSiTing@ANDROID.PERFORMANCE, 2020/02/28, Add for a performance tag for logcat and logd
-#define ALOGP(tag, ...) __android_log_buf_print(LOG_ID_SYSTEM, ANDROID_LOG_INFO, tag,  __VA_ARGS__)
-#endif /* OPLUS_EXTENSION_API */
 
 /*
  * Conditional given a desired logging priority and tag.
@@ -374,8 +394,8 @@ extern int __fake_use_va_args(int, ...);
  * ANDROID_LOG_FATAL. default_prio if no property. Undefined behavior if
  * any other value.
  */
-int __android_log_is_loggable(int prio, const char* tag, int default_prio);
-int __android_log_is_loggable_len(int prio, const char* tag, size_t len, int default_prio);
+LIBLOG_EXPORT int __android_log_is_loggable(int prio, const char* tag, int default_prio);
+LIBLOG_EXPORT int __android_log_is_loggable_len(int prio, const char* tag, size_t len, int default_prio);
 
 #if LOG_NDEBUG /* Production */
 #define android_testLog(prio, tag) \
@@ -390,5 +410,3 @@ int __android_log_is_loggable_len(int prio, const char* tag, size_t len, int def
 #endif
 
 __END_DECLS
-
-#endif

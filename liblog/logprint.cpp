@@ -21,13 +21,17 @@
 #include <errno.h>
 #include <inttypes.h>
 #ifndef __MINGW32__
+#ifndef _MSC_VER
 #include <pwd.h>
+#endif
 #endif
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifndef _MSC_VER
 #include <sys/param.h>
+#endif
 #include <sys/types.h>
 #include <wchar.h>
 
@@ -285,7 +289,7 @@ int android_log_setPrintFormat(AndroidLogFormat* p_format, AndroidLogPrintFormat
   return 1;
 }
 
-#if !defined(__MINGW32__)
+#if !defined(__MINGW32__) && !defined(_MSC_VER)
 // Sets $TZ, but allows it to be optionally reset.
 class TzSetter {
  public:
@@ -336,7 +340,7 @@ AndroidLogPrintFormat android_log_formatFromString(const char* formatString) {
   if (!strcmp(formatString, "descriptive")) return FORMAT_MODIFIER_DESCRIPT;
     /* clang-format on */
 
-#if !defined(__MINGW32__)
+#if !defined(__MINGW32__) && !defined(_MSC_VER)
   // Check whether the format string is actually a time zone. If tzname[0]
   // is the empty string, that's tzset() signalling that it doesn't know
   // the requested timezone.
@@ -445,6 +449,38 @@ static char* strsep(char** stringp, const char* delim) {
 }
 #endif
 
+namespace {
+    char* __strsep( char** stringp, const char* delim )
+    {
+        char* s;
+        const char* spanp;
+        int c, sc;
+        char* tok;
+
+        if( ( s = *stringp ) == NULL )
+            return ( NULL );
+        for( tok = s;;)
+        {
+            c = *s++;
+            spanp = delim;
+            do
+            {
+                if( ( sc = *spanp++ ) == c )
+                {
+                    if( c == 0 )
+                        s = NULL;
+                    else
+                        s[-1] = 0;
+                    *stringp = s;
+                    return ( tok );
+                }
+            } while( sc != 0 );
+        }
+        /* NOTREACHED */
+        return NULL;
+    }
+}
+
 /**
  * filterString: a comma/whitespace-separated set of filter expressions
  *
@@ -462,7 +498,7 @@ int android_log_addFilterString(AndroidLogFormat* p_format, const char* filterSt
   int err;
 
   /* Yes, I'm using strsep */
-  while (NULL != (p_ret = strsep(&p_cur, " \t,"))) {
+  while (NULL != (p_ret = __strsep(&p_cur, " \t,"))) {
     /* ignore whitespace-only entries */
     if (p_ret[0] != '\0') {
       err = android_log_addFilterRule(p_format, p_ret);
@@ -1693,7 +1729,7 @@ char* android_log_formatLogLine(AndroidLogFormat* p_format, char* defaultBuffer,
 
 size_t android_log_printLogLine(AndroidLogFormat* p_format, FILE* fp,
                                 const AndroidLogEntry* entry) {
-  char buf[4096] __attribute__((__uninitialized__));
+  char buf[4096] /*__attribute__((__uninitialized__))*/;
   size_t line_length;
   char* line = android_log_formatLogLine(p_format, buf, sizeof(buf), entry, &line_length);
   if (!line) {

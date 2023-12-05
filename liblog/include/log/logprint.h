@@ -23,6 +23,8 @@
 #include <android/log.h>
 #include <log/event_tag_map.h>
 
+#include <log/liblog_export.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -67,18 +69,18 @@ typedef struct AndroidLogEntry_t {
   const char* message;
 } AndroidLogEntry;
 
-AndroidLogFormat* android_log_format_new();
+LIBLOG_EXPORT AndroidLogFormat* android_log_format_new();
 
-void android_log_format_free(AndroidLogFormat* p_format);
+LIBLOG_EXPORT void android_log_format_free(AndroidLogFormat* p_format);
 
 /* currently returns 0 if format is a modifier, 1 if not */
-int android_log_setPrintFormat(AndroidLogFormat* p_format,
+LIBLOG_EXPORT int android_log_setPrintFormat(AndroidLogFormat* p_format,
                                AndroidLogPrintFormat format);
 
 /**
  * Returns FORMAT_OFF on invalid string
  */
-AndroidLogPrintFormat android_log_formatFromString(const char* s);
+LIBLOG_EXPORT AndroidLogPrintFormat android_log_formatFromString(const char* s);
 
 /**
  * filterExpression: a single filter expression
@@ -90,7 +92,7 @@ AndroidLogPrintFormat android_log_formatFromString(const char* s);
  *
  */
 
-int android_log_addFilterRule(AndroidLogFormat* p_format,
+LIBLOG_EXPORT int android_log_addFilterRule(AndroidLogFormat* p_format,
                               const char* filterExpression);
 
 /**
@@ -103,14 +105,14 @@ int android_log_addFilterRule(AndroidLogFormat* p_format,
  *
  */
 
-int android_log_addFilterString(AndroidLogFormat* p_format,
+LIBLOG_EXPORT int android_log_addFilterString(AndroidLogFormat* p_format,
                                 const char* filterString);
 
 /**
  * returns 1 if this log line should be printed based on its priority
  * and tag, and 0 if it should not
  */
-int android_log_shouldPrintLine(AndroidLogFormat* p_format, const char* tag,
+LIBLOG_EXPORT int android_log_shouldPrintLine(AndroidLogFormat* p_format, const char* tag,
                                 android_LogPriority pri);
 
 /**
@@ -120,7 +122,7 @@ int android_log_shouldPrintLine(AndroidLogFormat* p_format, const char* tag,
  * Returns 0 on success and -1 on invalid wire format (entry will be
  * in unspecified state)
  */
-int android_log_processLogBuffer(struct logger_entry* buf,
+LIBLOG_EXPORT int android_log_processLogBuffer(struct logger_entry* buf,
                                  AndroidLogEntry* entry);
 
 /**
@@ -129,7 +131,7 @@ int android_log_processLogBuffer(struct logger_entry* buf,
  * If "map" is non-NULL, it will be used to convert the log tag number
  * into a string.
  */
-int android_log_processBinaryLogBuffer(struct logger_entry* buf,
+LIBLOG_EXPORT int android_log_processBinaryLogBuffer(struct logger_entry* buf,
                                        AndroidLogEntry* entry,
                                        const EventTagMap* map, char* messageBuf,
                                        int messageBufLen);
@@ -142,7 +144,7 @@ int android_log_processBinaryLogBuffer(struct logger_entry* buf,
  * Returns NULL on malloc error
  */
 
-char* android_log_formatLogLine(AndroidLogFormat* p_format, char* defaultBuffer,
+LIBLOG_EXPORT char* android_log_formatLogLine(AndroidLogFormat* p_format, char* defaultBuffer,
                                 size_t defaultBufferSize,
                                 const AndroidLogEntry* p_line,
                                 size_t* p_outLength);
@@ -150,7 +152,7 @@ char* android_log_formatLogLine(AndroidLogFormat* p_format, char* defaultBuffer,
 /**
  * Formats a log message into a FILE*.
  */
-size_t android_log_printLogLine(AndroidLogFormat* p_format, FILE* fp, const AndroidLogEntry* entry);
+LIBLOG_EXPORT size_t android_log_printLogLine(AndroidLogFormat* p_format, FILE* fp, const AndroidLogEntry* entry);
 
 #ifdef __cplusplus
 }
