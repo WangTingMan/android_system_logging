@@ -364,7 +364,7 @@ extern int __fake_use_va_args(int, ...);
  * The second argument may be NULL or "" to indicate the "global" tag.
  */
 #define ALOG(priority, tag, ...) __android_log_print_ext(ANDROID_##priority, tag, \
-    __FILE__, __LINE__, ##__VA_ARGS__)
+    __FILE__, __LINE__, __VA_ARGS__)
 
 #ifndef ALOG
 #define ALOG(priority, tag, ...) LOG_PRI(ANDROID_##priority, tag, __VA_ARGS__)

@@ -61,6 +61,10 @@
 #include <sys/cdefs.h>
 #endif
 
+#ifdef __cplusplus
+#include <string>
+#endif
+
 #include <log/liblog_export.h>
 
 #if !defined(__BIONIC__) && !defined(__INTRODUCED_IN)
@@ -394,6 +398,18 @@ LIBLOG_EXPORT void __set_default_log_file_name( const char* a_file_name, int a_a
 
 #ifdef __cplusplus
 }
+#endif
+
+#ifdef _MSC_VER
+#ifdef __cplusplus
+LIBLOG_EXPORT std::string __rotate_file
+    (
+    std::string a_dir,
+    std::string a_file_name,
+    std::string a_ext_name,
+    int a_max_number
+    );
+#endif
 #endif
 
 /** @} */
