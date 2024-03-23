@@ -10,9 +10,11 @@
 #include <cstring>
 #include <mutex>
 #include <string_view>
+#include <shared_mutex>
 #include <vector>
 #include <fstream>
 #include <filesystem>
+#include <unordered_map>
 
 #include <base/debug/stack_trace.h>
 #include <base/files/file_util.h>
@@ -21,12 +23,59 @@
 #include <base/threading/thread.h>
 #include <base/time/time.h>
 #include <base/logging.h>
+#include <base/strings/sys_string_conversions.h>
 
 std::recursive_mutex s_log_file_mutex;
 std::fstream s_log_file_stream;
 std::string s_file_name;
+std::string s_original_name;
+int s_max_file_count = 5;
+int s_max_line_number = 1000000;
+int s_current_line_number = 0;
 
-const char *___extract_file_name_from_path(const char *path) {
+class file_name_cacher
+{
+
+public:
+
+    static file_name_cacher& get_instance();
+
+    const char* extract_file_name_from_path( const char* path );
+
+private:
+
+    const char* find_file_name_from_path( const char* path );
+
+    std::shared_mutex m_mutex;
+    std::unordered_map<const char*, const char*> m_cached_file_names;
+};
+
+file_name_cacher& file_name_cacher::get_instance()
+{
+    static file_name_cacher instance;
+    return instance;
+}
+
+const char* file_name_cacher::extract_file_name_from_path( const char* path )
+{
+    std::shared_lock<std::shared_mutex> sh_locker( m_mutex );
+    auto it = m_cached_file_names.find( path );
+    if( it != m_cached_file_names.end() )
+    {
+        return it->second;
+    }
+
+    sh_locker.unlock();
+
+    const char* base_name = find_file_name_from_path( path );
+
+    std::lock_guard<std::shared_mutex> locker( m_mutex );
+    m_cached_file_names[path] = base_name;
+
+    return base_name;
+}
+
+const char * file_name_cacher::find_file_name_from_path(const char *path) {
   const char *file = path;
   const char *split = path;
   while (file && *(file++) != '\0') {
@@ -50,7 +99,7 @@ void ___default_logger
         const char* a_pStr
         )
 {
-    const char* file = ___extract_file_name_from_path(a_fileName);
+    const char* file = file_name_cacher::get_instance().extract_file_name_from_path( a_fileName );
     std::stringstream ss;
 
     base::Time::Exploded exploded_time;
@@ -127,7 +176,15 @@ void ___default_logger
 
     if( s_log_file_stream.is_open() )
     {
+        s_current_line_number++;
         s_log_file_stream << log_str << std::flush;
+        if( s_current_line_number > s_max_line_number )
+        {
+            s_current_line_number = 0;
+            s_log_file_stream.close();
+            s_file_name = __rotate_file( s_original_name, s_max_file_count );
+            s_log_file_stream.open( s_file_name, std::ios::out | std::ios::trunc );
+        }
     }
     else
     {
@@ -152,7 +209,12 @@ extern "C" void __set_default_log_file_name(const char* a_file_name, int a_auto_
     std::lock_guard<std::recursive_mutex> lcker( s_log_file_mutex );
     if( a_file_name )
     {
-        s_file_name = a_file_name;
+        s_original_name.assign( a_file_name );
+        s_file_name = s_original_name;
+        if( a_auto_change_name )
+        {
+            s_file_name = __rotate_file( s_original_name, 5 );
+        }
     }
     else
     {
@@ -179,6 +241,62 @@ extern "C" void __set_default_log_file_name(const char* a_file_name, int a_auto_
         }
         s_file_name = file_name;
     }
+}
+
+extern "C" void __set_file_log_attributes
+    (
+    int a_max_file_count,
+    int a_max_line_number
+    )
+{
+    std::lock_guard<std::recursive_mutex> lcker( s_log_file_mutex );
+    s_max_file_count = a_max_file_count > 0 ? a_max_file_count : s_max_file_count;
+    s_max_line_number = a_max_line_number > 1000 ? a_max_line_number : s_max_line_number;
+}
+
+std::string __rotate_file
+    (
+    std::string a_path,
+    int a_max_number
+    )
+{
+    std::string ret_path;
+
+    ::base::FilePath path( a_path );
+    ::base::FilePath dir = path.DirName();
+    auto ext = path.FinalExtension();
+    std::string ext_name;
+    if( ext.empty() )
+    {
+        ext_name = "log";
+    }
+    else
+    {
+        std::string ext_name_ = base::SysWideToNativeMB( ext );
+        auto point_pos = ext_name_.find_last_of( '.' );
+        if( point_pos != std::string::npos )
+        {
+            if( ext_name_.size() > 1 )
+            {
+                ext_name = ext_name_.substr( point_pos + 1 );
+            }
+            else
+            {
+                ext_name = "log";
+            }
+        }
+        else
+        {
+            ext_name = ext_name_;
+        }
+    }
+
+    path = path.RemoveExtension();
+    auto base_name = path.BaseName();
+
+    ret_path = __rotate_file( dir.StdStringValue(), base_name.StdStringValue(), ext_name, a_max_number );
+
+    return ret_path;
 }
 
 std::string __rotate_file

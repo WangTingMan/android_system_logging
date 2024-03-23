@@ -394,6 +394,13 @@ LIBLOG_EXPORT void __android_log_set_default_tag(const char* tag) __INTRODUCED_I
  * a_auto_change_name: if a_file_name is null, this parameter take effect.
  */
 LIBLOG_EXPORT void __set_default_log_file_name( const char* a_file_name, int a_auto_change_name );
+
+LIBLOG_EXPORT void __set_file_log_attributes
+    (
+    int a_max_file_count,
+    int a_max_line_number
+    );
+
 #endif
 
 #ifdef __cplusplus
@@ -407,6 +414,12 @@ LIBLOG_EXPORT std::string __rotate_file
     std::string a_dir,
     std::string a_file_name,
     std::string a_ext_name,
+    int a_max_number
+    );
+
+LIBLOG_EXPORT std::string __rotate_file
+    (
+    std::string a_path,
     int a_max_number
     );
 #endif
