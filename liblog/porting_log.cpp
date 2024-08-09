@@ -379,7 +379,13 @@ std::string __rotate_file
          ( it != files_found.end() ) && ( i < delete_count );
          ++it, ++i )
     {
-        std::filesystem::remove( *it );
+        std::error_code error;
+        std::string error_str;
+        bool ret = std::filesystem::remove( *it, error );
+        if( !ret )
+        {
+            error_str = error.message();
+        }
     }
 
     return new_file_path;

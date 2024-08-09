@@ -168,7 +168,8 @@ extern int __fake_use_va_args(int, ...);
 
 #ifndef LOG_ALWAYS_FATAL
 #define LOG_ALWAYS_FATAL(...) \
-  (((void)android_printAssert(NULL, LOG_TAG, ##__VA_ARGS__)))
+  __android_log_print_ext(ANDROID_LOG_FATAL, LOG_TAG, \
+    __FILE__, __LINE__, __VA_ARGS__)
 #endif
 
 /*
