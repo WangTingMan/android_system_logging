@@ -393,6 +393,7 @@ LIBLOG_EXPORT void __android_log_set_default_tag(const char* tag) __INTRODUCED_I
  * a_file_name: the log file name, auto generate a file name if it is null.
  * a_auto_change_name: if a_file_name is null, this parameter take effect.
  */
+#define __set_default_log_file_name_defined
 LIBLOG_EXPORT void __set_default_log_file_name( const char* a_file_name, int a_auto_change_name );
 
 LIBLOG_EXPORT void __set_file_log_attributes
