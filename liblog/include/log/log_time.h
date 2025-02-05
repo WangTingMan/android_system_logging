@@ -28,13 +28,13 @@
 /* next power of two after NS_PER_SEC */
 #define LOG_TIME_NSEC(t) ((t)->tv_nsec & (UINT32_MAX >> 2))
 
-#ifdef __cplusplus
-
-extern "C" {
-
 #ifdef _MSC_VER
 #pragma pack(1)
 #endif
+
+#ifdef __cplusplus
+
+extern "C" {
 
 struct log_time {
  public:
@@ -155,10 +155,6 @@ struct log_time {
   char* strptime(const char* s, const char* format);
 }/* __attribute__((__packed__))*/;
 
-#ifdef _MSC_VER
-#pragma pack()
-#endif
-
 }
 
 #else /* __cplusplus */
@@ -166,6 +162,10 @@ struct log_time {
 typedef struct log_time {
   uint32_t tv_sec;
   uint32_t tv_nsec;
-} __attribute__((__packed__)) log_time;
+} /*__attribute__((__packed__))*/ log_time;
 
 #endif /* __cplusplus */
+
+#ifdef _MSC_VER
+#pragma pack()
+#endif
