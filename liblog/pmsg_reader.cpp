@@ -78,7 +78,8 @@ int PmsgRead(struct logger_list* logger_list, struct log_msg* log_msg) {
       return preread_count ? -EIO : -EAGAIN;
     }
     if ((buf.p.magic != LOGGER_MAGIC) || (buf.p.len <= sizeof(buf)) ||
-        (buf.p.len > (sizeof(buf) + LOGGER_ENTRY_MAX_PAYLOAD)) || (buf.l.id >= LOG_ID_MAX) ||
+        (buf.p.len > (sizeof(buf) + LOGGER_ENTRY_MAX_PAYLOAD)) ||
+        !__android_log_id_is_valid(static_cast<log_id_t>(buf.l.id)) ||
         (buf.l.realtime.tv_nsec >= NS_PER_SEC) ||
         ((buf.l.id != LOG_ID_EVENTS) && (buf.l.id != LOG_ID_SECURITY) &&
          ((buf.prio == ANDROID_LOG_UNKNOWN) || (buf.prio == ANDROID_LOG_DEFAULT) ||
@@ -185,9 +186,7 @@ ssize_t __android_log_pmsg_file_read(log_id_t logId, char prio, const char* pref
   struct logger_list logger_list = {
       .mode = static_cast<int>(ANDROID_LOG_PSTORE | ANDROID_LOG_NONBLOCK),
       .log_mask = (unsigned)-1};
-  if (logId != LOG_ID_ANY) {
-    logger_list.log_mask = (1 << logId);
-  }
+  logger_list.log_mask = (1 << logId);
   logger_list.log_mask &= ~((1 << LOG_ID_KERNEL) | (1 << LOG_ID_EVENTS) | (1 << LOG_ID_SECURITY));
   if (!logger_list.log_mask) {
     return -EINVAL;

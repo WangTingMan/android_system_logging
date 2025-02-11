@@ -40,6 +40,9 @@
 
 #include "logger.h"
 
+// Socket timeout in seconds. Accounts for tail operation which can take longer.
+#define LIBLOG_SOCK_TIMEOUT_S 5
+
 // Connects to /dev/socket/<name> and returns the associated fd or returns -1 on error.
 // O_CLOEXEC is always set.
 static int socket_local_client(const std::string& name, int type, bool timeout) {
@@ -58,8 +61,8 @@ static int socket_local_client(const std::string& name, int type, bool timeout) 
 
   if (timeout) {
     // Sending and receiving messages should be instantaneous, but we don't want to wait forever if
-    // logd is hung, so we set a gracious 2s timeout.
-    struct timeval t = {2, 0};
+    // logd is hung, so we set a timeout.
+    struct timeval t = {LIBLOG_SOCK_TIMEOUT_S, 0};
     if (setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &t, sizeof(t)) == -1) {
       return -1;
     }
@@ -96,7 +99,7 @@ ssize_t SendLogdControlMessage(char* buf, size_t buf_size) {
   len = buf_size;
   cp = buf;
   while ((ret = TEMP_FAILURE_RETRY(read(sock, cp, len))) > 0) {
-    if (((size_t)ret == len) || (buf_size < PAGE_SIZE)) {
+    if ((size_t)ret == len) {
       break;
     }
 
@@ -275,13 +278,22 @@ int android_logger_set_prune_list(struct logger_list* logger_list, const char* b
 static int logdOpen(struct logger_list* logger_list) {
   char buffer[256], *cp, c;
   int ret, remaining, sock;
+  bool set_timeout;
 
   sock = atomic_load(&logger_list->fd);
   if (sock > 0) {
     return sock;
   }
 
-  sock = socket_local_client("logdr", SOCK_SEQPACKET, false);
+  /* Set timeouts for non-blocking mode but not if wrapping mode is also set.
+   * Wrapping mode intructs logd to wake the client when the log is about to
+   * wrap(get pruned) to minimize CPU usage so the socket should stay open for
+   * up to 2hours.*/
+  set_timeout = (logger_list->mode & ANDROID_LOG_NONBLOCK) &&
+                !(logger_list->mode & ANDROID_LOG_WRAP);
+
+  sock = socket_local_client("logdr", SOCK_SEQPACKET, set_timeout);
+
   if (sock <= 0) {
     if ((sock == -1) && errno) {
       return -errno;

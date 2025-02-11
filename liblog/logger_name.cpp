@@ -62,7 +62,7 @@ static const char* LOG_NAME[LOG_ID_MAX] = {
 #endif
 
 const char* android_log_id_to_name(log_id_t log_id) {
-  if (log_id >= LOG_ID_MAX) {
+  if (!__android_log_id_is_valid(log_id)) {
     log_id = LOG_ID_MAIN;
   }
   return LOG_NAME(log_id);

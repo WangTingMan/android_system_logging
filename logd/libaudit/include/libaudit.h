@@ -100,4 +100,15 @@ extern int audit_setup(int fd, pid_t pid);
  */
 extern int audit_rate_limit(int fd, uint32_t limit);
 
+/**
+ * Logs an AVC decision from userland.
+ * @param fd
+ *  The fd returned by a call to audit_open()
+ * @param msg
+ *  The message to log.
+ * @return
+ *  This function returns 0 on success, -errno on error.
+ */
+extern int audit_log_android_avc_message(int fd, const char* msg);
+
 __END_DECLS

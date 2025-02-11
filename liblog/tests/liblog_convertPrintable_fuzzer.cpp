@@ -16,7 +16,7 @@
 
 #include <fuzzer/FuzzedDataProvider.h>
 
-size_t convertPrintable(char* p, const char* message, size_t messageLen);
+size_t convertPrintable(char*, const char*, size_t);
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t length) {
   FuzzedDataProvider dataProvider(data, length);
@@ -24,7 +24,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t length) {
 
   size_t size = convertPrintable(nullptr, contents.data(), contents.size());
 
-  char buf[size];
+  char buf[size + 1];
   convertPrintable(buf, contents.data(), contents.size());
 
   return 0;

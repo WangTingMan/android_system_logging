@@ -55,6 +55,7 @@
  */
 
 #include <stdarg.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #ifndef _MSC_VER
@@ -102,6 +103,9 @@ typedef enum android_LogPriority {
 /**
  * Writes the constant string `text` to the log, with priority `prio` and tag
  * `tag`.
+ *
+ * @return 1 if the message was written to the log, or -EPERM if it was not; see
+ * __android_log_is_loggable().
  */
 LIBLOG_EXPORT int __android_log_write(int prio, const char* tag, const char* text);
 
@@ -109,6 +113,9 @@ LIBLOG_EXPORT int __android_log_write(int prio, const char* tag, const char* tex
  * Writes a formatted string to the log, with priority `prio` and tag `tag`.
  * The details of formatting are the same as for
  * [printf(3)](http://man7.org/linux/man-pages/man3/printf.3.html).
+ *
+ * @return 1 if the message was written to the log, or -EPERM if it was not; see
+ * __android_log_is_loggable().
  */
 LIBLOG_EXPORT int __android_log_print(int prio, const char* tag, const char* fmt, ...)
     /*__attribute__((__format__(printf, 3, 4)))*/;
@@ -123,8 +130,11 @@ LIBLOG_EXPORT int __android_log_print_ext(
     ... );
 
 /**
- * Equivalent to `__android_log_print`, but taking a `va_list`.
- * (If `__android_log_print` is like `printf`, this is like `vprintf`.)
+ * Equivalent to __android_log_print(), but taking a `va_list`.
+ * (If __android_log_print() is like printf(), this is like vprintf().)
+ *
+ * @return 1 if the message was written to the log, or -EPERM if it was not; see
+ * __android_log_is_loggable().
  */
 LIBLOG_EXPORT int __android_log_vprint(int prio, const char* tag, const char* fmt, va_list ap)
     /*__attribute__((__format__(printf, 3, 0)))*/;
@@ -178,11 +188,18 @@ typedef enum log_id{
   LOG_ID_DEFAULT = 0x7FFFFFFF
 } log_id_t;
 
+static inline bool __android_log_id_is_valid(log_id_t id) {
+  return id >= LOG_ID_MIN && id < LOG_ID_MAX;
+}
+
 /**
  * Writes the constant string `text` to the log buffer `id`,
  * with priority `prio` and tag `tag`.
  *
  * Apps should use __android_log_write() instead.
+ *
+ * @return 1 if the message was written to the log, or -EPERM if it was not; see
+ * __android_log_is_loggable().
  */
 LIBLOG_EXPORT int __android_log_buf_write(int bufID, int prio, const char* tag, const char* text);
 
@@ -193,6 +210,9 @@ LIBLOG_EXPORT int __android_log_buf_write(int bufID, int prio, const char* tag, 
  * [printf(3)](http://man7.org/linux/man-pages/man3/printf.3.html).
  *
  * Apps should use __android_log_print() instead.
+ *
+ * @return 1 if the message was written to the log, or -EPERM if it was not; see
+ * __android_log_is_loggable().
  */
 LIBLOG_EXPORT int __android_log_buf_print(int bufID, int prio, const char* tag, const char* fmt, ...)
     /*__attribute__((__format__(printf, 4, 5)))*/;
@@ -202,7 +222,7 @@ LIBLOG_EXPORT int __android_log_buf_print(int bufID, int prio, const char* tag, 
  * and sending log messages to user defined loggers specified in __android_log_set_logger().
  */
 struct __android_log_message {
-  /** Must be set to sizeof(__android_log_message) and is used for versioning. */
+  /** Must be set to `sizeof(__android_log_message)` and is used for versioning. */
   size_t struct_size;
 
   /** {@link log_id_t} values. */
@@ -243,7 +263,7 @@ typedef void (*__android_aborter_function)(const char* abort_message);
  * buffers, then pass the message to liblog via this function, and therefore we do not want to
  * duplicate the loggability check here.
  *
- * @param log_message the log message itself, see __android_log_message.
+ * @param log_message the log message itself, see {@link __android_log_message}.
  *
  * Available since API level 30.
  */
@@ -262,20 +282,20 @@ LIBLOG_EXPORT void __android_log_write_log_message(struct __android_log_message*
 LIBLOG_EXPORT void __android_log_set_logger(__android_logger_function logger) __INTRODUCED_IN(30);
 
 /**
- * Writes the log message to logd.  This is an __android_logger_function and can be provided to
+ * Writes the log message to logd.  This is an {@link __android_logger_function} and can be provided to
  * __android_log_set_logger().  It is the default logger when running liblog on a device.
  *
- * @param log_message the log message to write, see __android_log_message.
+ * @param log_message the log message to write, see {@link __android_log_message}.
  *
  * Available since API level 30.
  */
 LIBLOG_EXPORT void __android_log_logd_logger(const struct __android_log_message* log_message) __INTRODUCED_IN(30);
 
 /**
- * Writes the log message to stderr.  This is an __android_logger_function and can be provided to
+ * Writes the log message to stderr.  This is an {@link __android_logger_function} and can be provided to
  * __android_log_set_logger().  It is the default logger when running liblog on host.
  *
- * @param log_message the log message to write, see __android_log_message.
+ * @param log_message the log message to write, see {@link __android_log_message}.
  *
  * Available since API level 30.
  */
@@ -287,7 +307,7 @@ LIBLOG_EXPORT void __android_log_stderr_logger(const struct __android_log_messag
  * user defined aborter function is highly recommended to abort and be noreturn, but is not strictly
  * required to.
  *
- * @param aborter the new aborter function, see __android_aborter_function.
+ * @param aborter the new aborter function, see {@link __android_aborter_function}.
  *
  * Available since API level 30.
  */
@@ -325,7 +345,7 @@ __INTRODUCED_IN(30);
  * minimum priority needed to log.  If only one is set, then that value is used to determine the
  * minimum priority needed.  If none are set, then default_priority is used.
  *
- * @param prio         the priority to test, takes android_LogPriority values.
+ * @param prio         the priority to test, takes {@link android_LogPriority} values.
  * @param tag          the tag to test.
  * @param default_prio the default priority to use if no properties or minimum priority are set.
  * @return an integer where 1 indicates that the message is loggable and 0 indicates that it is not.
@@ -344,7 +364,7 @@ LIBLOG_EXPORT int __android_log_is_loggable(int prio, const char* tag, int defau
  * minimum priority needed to log.  If only one is set, then that value is used to determine the
  * minimum priority needed.  If none are set, then default_priority is used.
  *
- * @param prio         the priority to test, takes android_LogPriority values.
+ * @param prio         the priority to test, takes {@link android_LogPriority} values.
  * @param tag          the tag to test.
  * @param len          the length of the tag.
  * @param default_prio the default priority to use if no properties or minimum priority are set.
@@ -358,20 +378,17 @@ LIBLOG_EXPORT int __android_log_is_loggable_len(int prio, const char* tag, size_
 /**
  * Sets the minimum priority that will be logged for this process.
  *
- * @param priority the new minimum priority to set, takes android_LogPriority values.
- * @return the previous set minimum priority as android_LogPriority values, or
- *         ANDROID_LOG_DEFAULT if none was set.
+ * @param priority the new minimum priority to set, takes {@link android_LogPriority} values.
+ * @return the previous set minimum priority, or `ANDROID_LOG_DEFAULT` if none was set.
  *
  * Available since API level 30.
  */
 LIBLOG_EXPORT int32_t __android_log_set_minimum_priority(int32_t priority) __INTRODUCED_IN(30);
 
 /**
- * Gets the minimum priority that will be logged for this process.  If none has been set by a
- * previous __android_log_set_minimum_priority() call, this returns ANDROID_LOG_DEFAULT.
+ * Gets the minimum priority that will be logged for this process.
  *
- * @return the current minimum priority as android_LogPriority values, or
- *         ANDROID_LOG_DEFAULT if none is set.
+ * @return the current minimum priority, or `ANDROID_LOG_DEFAULT` if none is set.
  *
  * Available since API level 30.
  */

@@ -47,7 +47,7 @@ __BEGIN_DECLS
 /*
  * Normally we strip the effects of ALOGV (VERBOSE messages),
  * LOG_FATAL and LOG_FATAL_IF (FATAL assert messages) from the
- * release builds be defining NDEBUG.  You can modify this (for
+ * release builds by defining NDEBUG.  You can modify this (for
  * example with "#define LOG_NDEBUG 0" at the top of your source
  * file) to change that behavior.
  */
@@ -389,6 +389,7 @@ extern int __fake_use_va_args(int, ...);
  *        over Android.
  */
 
+<<<<<<< HEAD
 /*
  * Use the per-tag properties "log.tag.<tagname>" to generate a runtime
  * result of non-zero to expose a log. prio is ANDROID_LOG_VERBOSE to
@@ -398,6 +399,8 @@ extern int __fake_use_va_args(int, ...);
 LIBLOG_EXPORT int __android_log_is_loggable(int prio, const char* tag, int default_prio);
 LIBLOG_EXPORT int __android_log_is_loggable_len(int prio, const char* tag, size_t len, int default_prio);
 
+=======
+>>>>>>> e41177e3
 #if LOG_NDEBUG /* Production */
 #define android_testLog(prio, tag) \
   (__android_log_is_loggable_len(prio, tag, (tag) ? strlen(tag) : 0, ANDROID_LOG_DEBUG) != 0)

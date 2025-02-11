@@ -12,16 +12,18 @@ rust_library {
         "liblog_rust",
     ],
     vendor_available: true,
+    product_available: true,
     target: {
         android: {
             rustlibs: [
                 "libandroid_logger",
-            ]
+            ],
         },
     },
     apex_available: [
+        "//apex_available:anyapex",
         "//apex_available:platform",
-        "com.android.uwb",
+        "//apex_available:anyapex",
     ],
     min_sdk_version: "29",
 }
@@ -32,6 +34,8 @@ rust_library {
     srcs: ["liblog_event_list.rs"],
     rustlibs: ["liblog_event_list_bindgen"],
     shared_libs: ["liblog"],
+    vendor_available: true,
+    product_available: true,
 }
 
 rust_defaults {
@@ -42,7 +46,34 @@ rust_defaults {
     rustlibs: [
         "liblogger",
         "liblog_rust",
-    ]
+    ],
+}
+
+rust_library {
+    name: "libstructured_log",
+    crate_name: "structured_log",
+    srcs: [
+        "structured_logger.rs",
+    ],
+    rustlibs: [
+        "liblog_event_list",
+        "liblog_event_list_bindgen",
+    ],
+
+    vendor_available: true,
+    product_available: true,
+    apex_available: [
+        "//apex_available:platform",
+        "//apex_available:anyapex",
+    ],
+}
+
+rust_defaults {
+    name: "structured_log_rust_defaults",
+    rustlibs: [
+        "libstructured_log",
+        "liblog_event_list",
+    ],
 }
 
 rust_test {
@@ -51,15 +82,15 @@ rust_test {
     srcs: ["logger.rs"],
     rustlibs: [
         "libenv_logger",
-        "libandroid_logger"
-    ]
+        "libandroid_logger",
+    ],
 }
 
 rust_test_host {
     name: "logger_host_unit_tests",
     defaults: ["liblogger_test_defaults"],
     srcs: ["logger.rs"],
-    rustlibs: ["libenv_logger"]
+    rustlibs: ["libenv_logger"],
 }
 
 // The following tests are each run as separate targets because they all require a clean init state.
@@ -89,4 +120,17 @@ rust_test {
     defaults: ["liblogger_test_defaults"],
     host_supported: true,
     srcs: ["tests/multiple_init.rs"],
+}
+
+rust_test {
+    name: "structured_logging_tests",
+    srcs: [
+        "tests/structured_logging_tests.rs",
+    ],
+    test_suites: [
+        "general-tests",
+    ],
+    defaults: [
+        "structured_log_rust_defaults",
+    ],
 }

@@ -43,9 +43,7 @@ static int get_ack(int fd) {
     if (rep.nlh.nlmsg_type == NLMSG_ERROR) {
         audit_get_reply(fd, &rep, GET_REPLY_BLOCKING, 0);
         rc = reinterpret_cast<struct nlmsgerr*>(rep.data)->error;
-        if (rc) {
-            return -rc;
-        }
+        return rc;
     }
 
     return 0;
@@ -214,4 +212,14 @@ int audit_get_reply(int fd, struct audit_message* rep, reply_t block, int peek) 
 
 void audit_close(int fd) {
     close(fd);
+}
+
+int audit_log_android_avc_message(int fd, const char* msg) {
+    size_t len;
+
+    if (__builtin_add_overflow(strlen(msg), 1, &len)) {
+        return -EINVAL;
+    }
+
+    return audit_send(fd, AUDIT_USER_AVC, msg, len);
 }

@@ -23,11 +23,11 @@
 // so make sure we do not regret hard-coding it as follows:
 package {
     default_applicable_licenses: ["Android-Apache-2.0"],
+    default_team: "trendy_team_native_tools_libraries",
 }
 
 event_flag = [
     "-DAUDITD_LOG_TAG=1003",
-    "-DCHATTY_LOG_TAG=1004",
     "-DTAG_DEF_LOG_TAG=1005",
     "-DLIBLOG_LOG_TAG=1006",
 ]
@@ -59,7 +59,6 @@ cc_library_static {
     defaults: ["logd_defaults"],
     host_supported: true,
     srcs: [
-        "ChattyLogBuffer.cpp",
         "CompressionEngine.cpp",
         "LogBufferElement.cpp",
         "LogReaderList.cpp",
@@ -75,55 +74,70 @@ cc_library_static {
         "SimpleLogBuffer.cpp",
     ],
     static_libs: ["liblog"],
+    shared_libs: ["libbinder"],
     logtags: ["event.logtags"],
 
     export_include_dirs: ["."],
+
+    aidl: {
+        libs: [
+            "ILogcatManagerService_aidl",
+        ],
+    },
 }
 
-cc_defaults {
-    name: "logd_binary_defaults",
+cc_binary {
+    name: "logd",
     defaults: ["logd_defaults"],
     init_rc: ["logd.rc"],
 
     srcs: [
         "main.cpp",
-        "LogPermissions.cpp",
         "CommandListener.cpp",
-        "LogListener.cpp",
-        "LogReader.cpp",
+        "LogdNativeService.cpp",
         "LogAudit.cpp",
         "LogKlog.cpp",
+        "LogListener.cpp",
+        "LogPermissions.cpp",
+        "LogReader.cpp",
         "TrustyLog.cpp",
-        "libaudit.cpp",
         "PkgIds.cpp",
     ],
 
     static_libs: [
+        "libaudit",
         "liblog",
         "liblogd",
+        "liblogd_binder",
     ],
 
     shared_libs: [
+        "libbinder",
         "libsysutils",
         "libcutils",
         "libpackagelistparser",
         "libprocessgroup",
         "libcap",
+        "libutils",
     ],
+    aidl: {
+        libs: [
+            "ILogcatManagerService_aidl",
+        ]
+    }
 }
 
-cc_binary {
-    name: "logd",
-    defaults: ["logd_binary_defaults"],
-}
+cc_library_static {
+    name: "libaudit",
+    srcs: [
+        "libaudit/libaudit.cpp"
+    ],
+    shared_libs: ["libbase"],
 
-cc_binary {
-    name: "logd.microdroid",
-    stem: "logd",
-    defaults: ["logd_binary_defaults"],
-    bootstrap: true,
-    installable: false,
-    visibility: ["//packages/modules/Virtualization/microdroid"],
+    export_include_dirs: ["libaudit/include"],
+
+    recovery_available: true,
+    vendor_available: true,
 }
 
 cc_binary {
@@ -131,10 +145,10 @@ cc_binary {
 
     srcs: [
         "auditctl.cpp",
-        "libaudit.cpp",
     ],
 
     shared_libs: ["libbase"],
+    static_libs: ["libaudit"],
 
     cflags: [
         "-Wextra",
@@ -165,7 +179,6 @@ cc_defaults {
     ] + event_flag,
 
     srcs: [
-        "ChattyLogBufferTest.cpp",
         "logd_test.cpp",
         "LogBufferTest.cpp",
         "SerializedLogBufferTest.cpp",
@@ -183,6 +196,10 @@ cc_defaults {
         "libselinux",
         "libz",
         "libzstd",
+    ],
+    shared_libs: [
+        "libbinder",
+        "libutils",
     ],
 }
 
@@ -233,4 +250,39 @@ cc_binary {
         "libz",
         "libzstd",
     ],
+    shared_libs: [
+        "libbinder",
+        "libutils",
+    ],
+}
+
+cc_library_static {
+    name: "liblogd_binder",
+    defaults: ["logd_defaults"],
+
+    srcs: [
+        ":logd_aidl",
+    ],
+    shared_libs: [
+        "libbinder",
+        "libutils",
+    ],
+    aidl: {
+        local_include_dirs: ["binder"],
+        export_aidl_headers: true,
+    },
+    whole_static_libs: [
+        "libincremental_aidl-cpp",
+    ],
+    export_shared_lib_headers: [
+        "libbinder",
+    ],
+}
+
+filegroup {
+    name: "logd_aidl",
+    srcs: [
+        "binder/android/os/ILogd.aidl",
+    ],
+    path: "binder",
 }
