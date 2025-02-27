@@ -1452,7 +1452,7 @@ char* android_log_formatLogLine(AndroidLogFormat* p_format, char* defaultBuffer,
                                 size_t defaultBufferSize, const AndroidLogEntry* entry,
                                 size_t* p_outLength) {
   struct tm tmBuf;
-  struct tm* ptm;
+  struct tm* ptm = nullptr;
   /* good margin, 23+nul for msec, 26+nul for usec, 29+nul to nsec */
   char timeBuf[64];
   char prefixBuf[128], suffixBuf[128];
@@ -1496,8 +1496,10 @@ char* android_log_formatLogLine(AndroidLogFormat* p_format, char* defaultBuffer,
     snprintf(timeBuf, sizeof(timeBuf), p_format->monotonic_output ? "%6lld" : "%19lld",
              (long long)now);
   } else {
+#ifndef _MSC_VER
     ptm = localtime_r(&now, &tmBuf);
     strftime(timeBuf, sizeof(timeBuf), &"%Y-%m-%d %H:%M:%S"[p_format->year_output ? 0 : 3], ptm);
+#endif
   }
   len = strlen(timeBuf);
   if (p_format->nsec_time_output) {

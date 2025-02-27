@@ -389,24 +389,19 @@ extern int __fake_use_va_args(int, ...);
  *        over Android.
  */
 
-<<<<<<< HEAD
-/*
- * Use the per-tag properties "log.tag.<tagname>" to generate a runtime
- * result of non-zero to expose a log. prio is ANDROID_LOG_VERBOSE to
- * ANDROID_LOG_FATAL. default_prio if no property. Undefined behavior if
- * any other value.
- */
-LIBLOG_EXPORT int __android_log_is_loggable(int prio, const char* tag, int default_prio);
-LIBLOG_EXPORT int __android_log_is_loggable_len(int prio, const char* tag, size_t len, int default_prio);
-
-=======
->>>>>>> e41177e3
 #if LOG_NDEBUG /* Production */
 #define android_testLog(prio, tag) \
   (__android_log_is_loggable_len(prio, tag, (tag) ? strlen(tag) : 0, ANDROID_LOG_DEBUG) != 0)
 #else
 #define android_testLog(prio, tag) \
   (__android_log_is_loggable_len(prio, tag, (tag) ? strlen(tag) : 0, ANDROID_LOG_VERBOSE) != 0)
+#endif
+
+#ifdef _MSC_VER
+#ifndef syslog
+#define LOG_ERR LOG_ERROR
+#define syslog(prio, ...) ALOG(prio, "syslog", __VA_ARGS__)
+#endif
 #endif
 
 #if defined(__clang__)

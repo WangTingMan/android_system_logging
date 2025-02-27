@@ -277,6 +277,7 @@ static uint64_t GetThreadId() {
 }
 
 static void filestream_logger(const struct __android_log_message* log_message, FILE* stream) {
+#ifndef _MSC_VER
   struct timespec ts;
   clock_gettime(CLOCK_REALTIME, &ts);
 
@@ -303,6 +304,7 @@ static void filestream_logger(const struct __android_log_message* log_message, F
     fprintf(stream, "%s %5d %5" PRIu64 " %c %-8s: %s\n", timestamp, getpid(), tid, priority_char,
             tag, log_message->message);
   }
+#endif
 }
 
 static const char* get_file_logger_path() {
