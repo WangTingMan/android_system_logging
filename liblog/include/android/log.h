@@ -335,6 +335,10 @@ LIBLOG_EXPORT void __android_log_call_aborter(const char* abort_message) __INTRO
 LIBLOG_EXPORT void __android_log_default_aborter(const char* abort_message) /*__attribute__((noreturn))*/
 __INTRODUCED_IN(30);
 
+#ifndef android_set_abort_message
+#define android_set_abort_message __android_log_default_aborter
+#endif
+
 /**
  * Use the per-tag properties "log.tag.<tagname>" along with the minimum priority from
  * __android_log_set_minimum_priority() to determine if a log message with a given prio and tag will

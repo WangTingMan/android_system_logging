@@ -193,6 +193,7 @@ void ___default_logger
 
     if (a_severity == ANDROID_LOG_FATAL)
     {
+        android_set_abort_message(log_str.c_str());
         std::abort();
     }
 }

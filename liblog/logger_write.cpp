@@ -203,7 +203,11 @@ void __android_log_default_aborter(const char* abort_message) {
 #ifdef __ANDROID__
   android_set_abort_message(abort_message);
 #else
+#if defined(_MSC_VER) && defined(_DEBUG)
+    _CrtDbgReport(_CRT_ASSERT, __FILE__, __LINE__, nullptr, "%s", abort_message);
+#else
   UNUSED(abort_message);
+#endif
 #endif
   abort();
 }
