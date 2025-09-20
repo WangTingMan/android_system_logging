@@ -108,7 +108,7 @@ void ___default_logger
 
     char buffer[256] = { 0 };
     snprintf( buffer, 256,
-              "[%02d-%02d %02d:%02d:%02d.%03d] ", exploded_time.month,
+              "[%02d-%02d %02d:%02d:%02d.%03d]", exploded_time.month,
               exploded_time.day_of_month, exploded_time.hour, exploded_time.minute,
               exploded_time.second, exploded_time.millisecond );
     ss << buffer;
@@ -116,37 +116,37 @@ void ___default_logger
     switch( a_severity )
     {
     case ANDROID_LOG_UNKNOWN:
-        ss << "[V] ";
+        ss << "[V]";
         break;
     case ANDROID_LOG_DEFAULT:
-        ss << "[V] ";
+        ss << "[V]";
         break;
     case ANDROID_LOG_VERBOSE:
-        ss << "[V] ";
+        ss << "[V]";
         break;
     case ANDROID_LOG_DEBUG:
-        ss << "[D] ";
+        ss << "[D]";
         break;
     case ANDROID_LOG_INFO:
-        ss << "[I] ";
+        ss << "[I]";
         break;
     case ANDROID_LOG_WARN:
-        ss << "[W] ";
+        ss << "[W]";
         break;
     case ANDROID_LOG_ERROR:
-        ss << "[E] ";
+        ss << "[E]";
         break;
     case ANDROID_LOG_FATAL:
-        ss << "[F] ";
+        ss << "[F]";
         break;
     case ANDROID_LOG_SILENT:
-        ss << "[V] ";
+        ss << "[V]";
         break;
     default:
         break;
     }
 
-    ss << "[" << base::PlatformThread::CurrentId() << "] ";
+    ss << "[" << base::PlatformThread::CurrentId() << "]";
 
     ss << "[" << file << ':' << a_lineNr << "] ";
     if (a_pStr)
