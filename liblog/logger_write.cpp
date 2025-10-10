@@ -40,9 +40,16 @@
 
 #include <atomic>
 
+#if __has_include(<android-base/errno_restorer.h>)
 #include <android-base/errno_restorer.h>
+#define HAS_ANDROID_BASE_ERRNO_RESTORER
+#endif
+#if __has_include(<android-base/macros.h>)
 #include <android-base/macros.h>
+#endif
+#if __has_include(<private/android_filesystem_config.h>)
 #include <private/android_filesystem_config.h>
+#endif
 #include <private/android_logger.h>
 
 #include "android/log.h"
@@ -72,7 +79,25 @@
 #include <sys/system_properties.h>
 #endif
 
+#ifdef HAS_ANDROID_BASE_ERRNO_RESTORER
 using android::base::ErrnoRestorer;
+#else
+class ErrnoRestorer {
+public:
+    ErrnoRestorer() : saved_errno_( errno ) {}
+
+    ~ErrnoRestorer() { errno = saved_errno_; }
+
+    // Allow this object to be used as part of && operation.
+    explicit operator bool() const { return true; }
+
+private:
+    const int saved_errno_;
+
+    ErrnoRestorer(const ErrnoRestorer&) = delete;
+    ErrnoRestorer& operator=( const ErrnoRestorer& ) = delete;
+};
+#endif
 
 #define LOG_BUF_SIZE 1024
 

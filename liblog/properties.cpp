@@ -28,7 +28,9 @@
 
 #include <algorithm>
 
+#if __has_include(<android-base/macros.h>)
 #include <android-base/macros.h>
+#endif
 
 #include <private/android_logger.h>
 

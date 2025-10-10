@@ -37,9 +37,13 @@
 #include <sys/types.h>
 #include <wchar.h>
 
+#if __has_include(<cutils/list.h>)
 #include <cutils/list.h>
+#define HAS_CUTILS_LIST
+#endif
 
 #include <algorithm>
+#include <list>
 
 #include <log/log.h>
 #include <log/log_read.h>
@@ -226,7 +230,9 @@ AndroidLogFormat* android_log_format_new() {
   return p_ret;
 }
 
+#ifdef HAS_CUTILS_LIST
 static list_declare(convertHead);
+#endif
 
 void android_log_format_free(AndroidLogFormat* p_format) {
   FilterInfo *p_info, *p_info_old;
@@ -243,12 +249,14 @@ void android_log_format_free(AndroidLogFormat* p_format) {
   free(p_format);
 
   /* Free conversion resource, can always be reconstructed */
+#ifdef HAS_CUTILS_LIST
   while (!list_empty(&convertHead)) {
     struct listnode* node = list_head(&convertHead);
     list_remove(node);
     LOG_ALWAYS_FATAL_IF(node == list_head(&convertHead), "corrupted list");
     free(node);
   }
+#endif
 }
 
 int android_log_setPrintFormat(AndroidLogFormat* p_format, AndroidLogPrintFormat format) {
