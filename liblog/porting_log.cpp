@@ -2,6 +2,7 @@
 #include <android/log.h>
 
 #include <atomic>
+#include <format>
 #include <stdarg.h>
 #include <stdio.h>
 #include <iostream>
@@ -25,38 +26,52 @@
 #include <base/logging.h>
 #include <base/strings/sys_string_conversions.h>
 
-std::recursive_mutex s_log_file_mutex;
-std::fstream s_log_file_stream;
-std::string s_file_name;
-std::string s_original_name;
-int s_max_file_count = 5;
-int s_max_line_number = 1000000;
-int s_current_line_number = 0;
-
-class file_name_cacher
+class logger_control_block
 {
 
 public:
 
-    static file_name_cacher& get_instance();
+    static logger_control_block& get_instance();
 
     const char* extract_file_name_from_path( const char* path );
+
+    bool print_string_to_file( std::string const & a_log_string );
+
+    void set_default_log_file_name(const char* a_file_name, int a_auto_change_name);
+
+    void set_file_log_attributes
+        (
+        int a_max_file_count,
+        int a_max_line_number
+        );
 
 private:
 
     const char* find_file_name_from_path( const char* path );
 
-    std::shared_mutex m_mutex;
+    std::shared_mutex m_mutex; // Protect member m_cached_file_names
     std::unordered_map<const char*, const char*> m_cached_file_names;
+
+    std::recursive_mutex m_log_file_mutex; // Protect all members below
+    std::fstream m_log_file_stream;
+    std::string m_file_name;
+    std::string m_original_name;
+    int m_max_file_count = 5;
+    int m_max_line_number = 1000000;
+    int m_current_line_number = 0;
 };
 
-file_name_cacher& file_name_cacher::get_instance()
+logger_control_block& logger_control_block::get_instance()
 {
-    static file_name_cacher instance;
-    return instance;
+    static logger_control_block* instance = nullptr;
+    if (!instance)
+    {
+        instance = new logger_control_block;
+    }
+    return *instance;
 }
 
-const char* file_name_cacher::extract_file_name_from_path( const char* path )
+const char* logger_control_block::extract_file_name_from_path( const char* path )
 {
     std::shared_lock<std::shared_mutex> sh_locker( m_mutex );
     auto it = m_cached_file_names.find( path );
@@ -75,7 +90,89 @@ const char* file_name_cacher::extract_file_name_from_path( const char* path )
     return base_name;
 }
 
-const char * file_name_cacher::find_file_name_from_path(const char *path) {
+bool logger_control_block::print_string_to_file(std::string const& a_log_string)
+{
+    std::lock_guard<std::recursive_mutex> lcker(m_log_file_mutex);
+    if (!m_log_file_stream.is_open())
+    {
+        if (m_file_name.empty())
+        {
+            __set_default_log_file_name(nullptr, false);
+        }
+
+        if (!m_file_name.empty())
+        {
+            m_log_file_stream.open(m_file_name, std::ios::out | std::ios::trunc);
+        }
+    }
+
+    if (m_log_file_stream.is_open())
+    {
+        m_current_line_number++;
+        m_log_file_stream << a_log_string << std::flush;
+        if (m_current_line_number > m_max_line_number)
+        {
+            m_current_line_number = 0;
+            m_log_file_stream.close();
+            m_file_name = __rotate_file(m_original_name, m_max_file_count);
+            m_log_file_stream.open(m_file_name, std::ios::out | std::ios::trunc);
+        }
+        return true;
+    }
+    return false;
+}
+
+void logger_control_block::set_default_log_file_name(const char* a_file_name, int a_auto_change_name)
+{
+    std::lock_guard<std::recursive_mutex> lcker(m_log_file_mutex);
+    if (a_file_name)
+    {
+        m_original_name.assign(a_file_name);
+        m_file_name = m_original_name;
+        if (a_auto_change_name)
+        {
+            m_file_name = __rotate_file(m_original_name, 5);
+        }
+    }
+    else
+    {
+        wchar_t module_name[MAX_PATH];
+        GetModuleFileName(nullptr, module_name, MAX_PATH);
+        ::base::FilePath path(module_name);
+        ::base::FilePath dir = path.DirName();
+
+        path = path.RemoveExtension();
+        auto base_name = path.BaseName();
+
+        std::string file_name;
+        if (a_auto_change_name)
+        {
+            file_name = __rotate_file(dir.StdStringValue(),
+                base_name.StdStringValue(),
+                "log", 5);
+        }
+        else
+        {
+            file_name = dir.StdStringValue();
+            file_name.append("/").append(base_name.StdStringValue())
+                .append(".log");
+        }
+        m_file_name = file_name;
+    }
+}
+
+void logger_control_block::set_file_log_attributes
+    (
+    int a_max_file_count,
+    int a_max_line_number
+    )
+{
+    std::lock_guard<std::recursive_mutex> lcker(m_log_file_mutex);
+    m_max_file_count = a_max_file_count > 0 ? a_max_file_count : m_max_file_count;
+    m_max_line_number = a_max_line_number > 1000 ? a_max_line_number : m_max_line_number;
+}
+
+const char * logger_control_block::find_file_name_from_path(const char *path) {
   const char *file = path;
   const char *split = path;
   while (file && *(file++) != '\0') {
@@ -99,7 +196,7 @@ void ___default_logger
         const char* a_pStr
         )
 {
-    const char* file = file_name_cacher::get_instance().extract_file_name_from_path( a_fileName );
+    const char* file = logger_control_block::get_instance().extract_file_name_from_path( a_fileName );
     std::stringstream ss;
 
     base::Time::Exploded exploded_time;
@@ -146,7 +243,7 @@ void ___default_logger
         break;
     }
 
-    ss << "[" << base::PlatformThread::CurrentId() << "]";
+    ss << "[" << std::format("{:0>5}", base::PlatformThread::CurrentId()) << "]";
 
     ss << "[" << file << ':' << a_lineNr << "] ";
     if (a_pStr)
@@ -160,33 +257,7 @@ void ___default_logger
         log_str.push_back('\n');
     }
 
-    std::lock_guard<std::recursive_mutex> lcker( s_log_file_mutex );
-    if( !s_log_file_stream.is_open() )
-    {
-        if( s_file_name.empty() )
-        {
-            __set_default_log_file_name( nullptr, false );
-        }
-
-        if( !s_file_name.empty() )
-        {
-            s_log_file_stream.open( s_file_name, std::ios::out | std::ios::trunc );
-        }
-    }
-
-    if( s_log_file_stream.is_open() )
-    {
-        s_current_line_number++;
-        s_log_file_stream << log_str << std::flush;
-        if( s_current_line_number > s_max_line_number )
-        {
-            s_current_line_number = 0;
-            s_log_file_stream.close();
-            s_file_name = __rotate_file( s_original_name, s_max_file_count );
-            s_log_file_stream.open( s_file_name, std::ios::out | std::ios::trunc );
-        }
-    }
-    else
+    if(!logger_control_block::get_instance().print_string_to_file(log_str))
     {
         std::cout << log_str;
     }
@@ -207,41 +278,7 @@ extern "C" void __android_log_logd_logger_default( const struct __android_log_me
 
 extern "C" void __set_default_log_file_name(const char* a_file_name, int a_auto_change_name)
 {
-    std::lock_guard<std::recursive_mutex> lcker( s_log_file_mutex );
-    if( a_file_name )
-    {
-        s_original_name.assign( a_file_name );
-        s_file_name = s_original_name;
-        if( a_auto_change_name )
-        {
-            s_file_name = __rotate_file( s_original_name, 5 );
-        }
-    }
-    else
-    {
-        wchar_t module_name[MAX_PATH];
-        GetModuleFileName( nullptr, module_name, MAX_PATH );
-        ::base::FilePath path( module_name );
-        ::base::FilePath dir = path.DirName();
-
-        path = path.RemoveExtension();
-        auto base_name = path.BaseName();
-
-        std::string file_name;
-        if( a_auto_change_name )
-        {
-            file_name = __rotate_file( dir.StdStringValue(),
-                                       base_name.StdStringValue(),
-                                       "log", 5 );
-        }
-        else
-        {
-            file_name = dir.StdStringValue();
-            file_name.append( "/" ).append( base_name.StdStringValue() )
-                .append( ".log" );
-        }
-        s_file_name = file_name;
-    }
+    logger_control_block::get_instance().set_default_log_file_name(a_file_name, a_auto_change_name);
 }
 
 extern "C" void __set_file_log_attributes
@@ -250,9 +287,7 @@ extern "C" void __set_file_log_attributes
     int a_max_line_number
     )
 {
-    std::lock_guard<std::recursive_mutex> lcker( s_log_file_mutex );
-    s_max_file_count = a_max_file_count > 0 ? a_max_file_count : s_max_file_count;
-    s_max_line_number = a_max_line_number > 1000 ? a_max_line_number : s_max_line_number;
+    logger_control_block::get_instance().set_file_log_attributes(a_max_file_count, a_max_line_number);
 }
 
 std::string __rotate_file
