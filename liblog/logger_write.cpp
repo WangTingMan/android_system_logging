@@ -97,6 +97,9 @@ private:
     ErrnoRestorer(const ErrnoRestorer&) = delete;
     ErrnoRestorer& operator=( const ErrnoRestorer& ) = delete;
 };
+#ifndef UNUSED
+#define UNUSED
+#endif
 #endif
 
 #define LOG_BUF_SIZE 1024

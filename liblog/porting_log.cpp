@@ -131,7 +131,7 @@ void logger_control_block::set_default_log_file_name(const char* a_file_name, in
         m_file_name = m_original_name;
         if (a_auto_change_name)
         {
-            m_file_name = __rotate_file(m_original_name, 5);
+            m_file_name = __rotate_file(m_original_name, m_max_file_count);
         }
     }
     else
@@ -351,7 +351,7 @@ std::string __rotate_file
 
     std::filesystem::path path( a_dir );
     std::error_code err_code;
-    if( !std::filesystem::exists( path ) )
+    if( !std::filesystem::exists( path, err_code) )
     {
         bool result = std::filesystem::create_directory( path, err_code );
         if( !result )
@@ -378,30 +378,37 @@ std::string __rotate_file
     std::set<std::filesystem::path> files_found;
     for( ; dir != end; ++dir )
     {
-        std::filesystem::path path_cur = dir->path();
-        if( !std::filesystem::is_regular_file( path_cur ) )
+        try
+        {
+            std::filesystem::path path_cur = dir->path();
+            if (!std::filesystem::is_regular_file(path_cur, err_code))
+            {
+                continue;
+            }
+
+            auto ext = path_cur.extension().generic_string();
+            if (!ext.ends_with(a_ext_name))
+            {
+                continue;
+            }
+
+            if (ext.size() > a_ext_name.size() + 1)
+            {
+                continue;
+            }
+
+            auto file_name = path_cur.filename().generic_string();
+            if (!file_name.starts_with(a_file_name))
+            {
+                continue;
+            }
+
+            files_found.emplace(path_cur);
+        }
+        catch (std::exception& e)
         {
             continue;
         }
-
-        auto ext = path_cur.extension().generic_string();
-        if( !ext.ends_with( a_ext_name ) )
-        {
-            continue;
-        }
-
-        if( ext.size() > a_ext_name.size() + 1 )
-        {
-            continue;
-        }
-
-        auto file_name = path_cur.filename().generic_string();
-        if( !file_name.starts_with( a_file_name ) )
-        {
-            continue;
-        }
-
-        files_found.emplace( path_cur );
     }
 
     if( static_cast<int>( files_found.size() ) < a_max_number )
