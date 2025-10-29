@@ -251,22 +251,24 @@ void __android_log_call_aborter(const char* abort_message) {
 }
 
 #ifdef __ANDROID__
-static int write_to_log(log_id_t log_id, struct iovec* vec, size_t nr) {
-  int ret;
-  struct timespec ts;
-
+static int write_to_log(log_id_t log_id, struct iovec* vec, size_t nr,
+                        const struct timespec* timestamp = nullptr) {
   if (log_id == LOG_ID_KERNEL) {
     return -EINVAL;
   }
 
-  clock_gettime(CLOCK_REALTIME, &ts);
+  struct timespec ts;
+  if (LIKELY(timestamp == nullptr)) {
+    clock_gettime(CLOCK_REALTIME, &ts);
+    timestamp = &ts;
+  }
 
   if (log_id == LOG_ID_SECURITY) {
     if (vec[0].iov_len < 4) {
       return -EINVAL;
     }
 
-    ret = check_log_uid_permissions();
+    int ret = check_log_uid_permissions();
     if (ret < 0) {
       return ret;
     }
@@ -280,13 +282,13 @@ static int write_to_log(log_id_t log_id, struct iovec* vec, size_t nr) {
     }
   }
 
-  ret = LogdWrite(log_id, &ts, vec, nr);
-  PmsgWrite(log_id, &ts, vec, nr);
+  int ret = LogdWrite(log_id, timestamp, vec, nr);
+  PmsgWrite(log_id, timestamp, vec, nr);
 
   return ret;
 }
 #else
-static int write_to_log(log_id_t, struct iovec*, size_t) {
+static int write_to_log(log_id_t, struct iovec*, size_t, const struct timespec* = nullptr) {
   // Non-Android text logs should go to __android_log_stderr_logger, not here.
   // Non-Android binary logs are always dropped.
   return 1;
@@ -390,6 +392,11 @@ void __android_log_stderr_logger(const struct __android_log_message* log_message
 }
 
 void __android_log_logd_logger(const struct __android_log_message* log_message) {
+  __android_log_logd_logger_with_timestamp(log_message, nullptr);
+}
+
+void __android_log_logd_logger_with_timestamp(const struct __android_log_message* log_message,
+                                              const struct timespec* timestamp) {
   if (log_to_file_if_overridden(log_message)) return;
 
   int buffer_id = log_message->buffer_id == LOG_ID_DEFAULT ? LOG_ID_MAIN : log_message->buffer_id;
@@ -403,7 +410,7 @@ void __android_log_logd_logger(const struct __android_log_message* log_message) 
   vec[2].iov_base = const_cast<void*>(static_cast<const void*>(log_message->message));
   vec[2].iov_len = strlen(log_message->message) + 1;
 
-  write_to_log(static_cast<log_id_t>(buffer_id), vec, 3);
+  write_to_log(static_cast<log_id_t>(buffer_id), vec, 3, timestamp);
 }
 
 int __android_log_write(int prio, const char* tag, const char* msg) {
@@ -432,7 +439,7 @@ void __android_log_write_log_message(__android_log_message* log_message) {
   logger_function(log_message);
 }
 
-int __android_log_buf_write(int bufID, int prio, const char* tag, const char* msg) {
+int __android_log_buf_write(int log_id, int prio, const char* tag, const char* msg) {
   ErrnoRestorer errno_restorer;
 
   if (!__android_log_is_loggable(prio, tag, ANDROID_LOG_VERBOSE)) {
@@ -440,7 +447,7 @@ int __android_log_buf_write(int bufID, int prio, const char* tag, const char* ms
   }
 
   __android_log_message log_message = {
-      sizeof(__android_log_message), bufID, prio, tag, nullptr, 0, msg};
+      sizeof(__android_log_message), log_id, prio, tag, nullptr, 0, msg};
   __android_log_write_log_message(&log_message);
   return 1;
 }
@@ -512,7 +519,7 @@ int __android_log_print_ext(
     return 0;
 }
 
-int __android_log_buf_print(int bufID, int prio, const char* tag, const char* fmt, ...) {
+int __android_log_buf_print(int log_id, int prio, const char* tag, const char* fmt, ...) {
   ErrnoRestorer errno_restorer;
 
   if (!__android_log_is_loggable(prio, tag, ANDROID_LOG_VERBOSE)) {
@@ -527,7 +534,7 @@ int __android_log_buf_print(int bufID, int prio, const char* tag, const char* fm
   va_end(ap);
 
   __android_log_message log_message = {
-      sizeof(__android_log_message), bufID, prio, tag, nullptr, 0, buf};
+      sizeof(__android_log_message), log_id, prio, tag, nullptr, 0, buf};
   __android_log_write_log_message(&log_message);
   return 1;
 }
