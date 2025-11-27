@@ -18,6 +18,7 @@
 
 #include <stdint.h>
 #include <time.h>
+#include <utils/Timers.h>
 
 /* struct log_time is a wire-format variant of struct timespec */
 #define NS_PER_SEC 1000000000ULL
