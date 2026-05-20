@@ -15,8 +15,10 @@
  */
 
 #pragma once
+
+#include <atomic>
+
 #ifndef _MSC_VER
-#include <stdatomic.h>
 #include <sys/cdefs.h>
 #endif
 
@@ -24,10 +26,8 @@
 
 #include "uio.h"
 
-__BEGIN_DECLS
-
 struct logger_list {
-  /*atomic_int*/int fd;
+  std::atomic<int> fd;
   int mode;
   unsigned int tail;
   log_time start;
@@ -48,5 +48,3 @@ struct logger_list {
 inline bool android_logger_is_logd(struct logger* logger) {
   return reinterpret_cast<uintptr_t>(logger) & LOGGER_LOGD;
 }
-
-__END_DECLS

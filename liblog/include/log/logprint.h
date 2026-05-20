@@ -65,7 +65,9 @@ typedef struct AndroidLogEntry_t {
   int32_t tid;
   const char* tag;
   size_t tagLen;
+  // Message length does not include the null terminator in "message".
   size_t messageLen;
+  // Must be null terminated.
   const char* message;
 } AndroidLogEntry;
 
@@ -96,6 +98,7 @@ LIBLOG_EXPORT int android_log_addFilterRule(AndroidLogFormat* p_format,
                               const char* filterExpression);
 
 /**
+<<<<<<< HEAD
  * filterString: a whitespace-separated set of filter expressions
  * eg "AT:d *:i"
  *
@@ -109,6 +112,8 @@ LIBLOG_EXPORT int android_log_addFilterString(AndroidLogFormat* p_format,
                                 const char* filterString);
 
 /**
+=======
+>>>>>>> android_origin/android16-qpr2-release
  * returns 1 if this log line should be printed based on its priority
  * and tag, and 0 if it should not
  */

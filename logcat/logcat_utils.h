@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012-2013 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,23 +16,20 @@
 
 #pragma once
 
-#include <IOUringSocketHandler/IOUringSocketHandler.h>
+#include <string>
 
-#include "LogBuffer.h"
+#include <log/logprint.h>
 
-class LogListener {
-  public:
-    explicit LogListener(LogBuffer* buf);
-    bool StartListener();
+#include <android-base/strings.h>
 
-  private:
-    void ThreadFunction();
-    static int GetLogSocket();
-    void HandleDataUring();
-    void HandleDataSync();
-    void ProcessBuffer(struct ucred* cred, void* buffer, ssize_t n);
-    bool InitializeUring();
-    std::unique_ptr<IOUringSocketHandler> uring_listener_;
-    int socket_;
-    LogBuffer* logbuf_;
-};
+/**
+ * filterString: a comma/whitespace-separated set of filter expressions
+ *
+ * eg "AT:d *:i"
+ */
+static bool addFilterString(AndroidLogFormat* format, const std::string& filters) {
+  for (const auto& filter : android::base::Split(filters, " \t,")) {
+    if (!filter.empty() && android_log_addFilterRule(format, filter.c_str()) < 0) return false;
+  }
+  return true;
+}
